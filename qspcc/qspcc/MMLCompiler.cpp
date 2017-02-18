@@ -146,7 +146,7 @@ void MMLCompiler::generateByteCodeTracks() {
 		generateATrack(i, track);
 	}
 
-	doc.calcDataSize(true);
+	doc.calcDataSize(NULL, true);
 }
 
 void MMLCompiler::generateATrack(int trackIndex, MusicTrack* pTrack) {

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "MMLCommand.h"
+#include "Embedder.h"
 
 typedef std::vector<class MusicTrack*> TrackPtrList;
 typedef std::vector<uint8_t> ByteList;
@@ -14,7 +15,15 @@ public:
 	virtual ~MusicDocument();
 
 	class MusicTrack* appendTrack();
-	void calcDataSize(bool dumpDebugInfo = false);
+	void calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo = false);
+
+	void generateSequenceImage();
+	size_t countTracks() const;
+
+	void dumpSequenceBlob();
+
+	int mGeneratedTrackLength;
+	ByteList mGeneratedSequenceBlob;
 protected:
 	void releaseAllTracks();
 	TrackPtrList mTrackPtrList;
@@ -29,6 +38,7 @@ public:
 
 	int size() const;
 	void addByte(uint8_t b);
+	uint8_t at(unsigned int position);
 
 	void dump();
 protected:

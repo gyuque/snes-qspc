@@ -4,6 +4,7 @@
 #include "GlobalConfig.h"
 #include "Embedder.h"
 #include "CommandOptions.h"
+#include "tester/testers.h"
 
 static GlobalConfig sGlobalConfig;
 static void globalSetup(Embedder& embd);
@@ -13,6 +14,9 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	Embedder embd;
 	globalSetup(embd);
+
+doDocumentTest();
+return 0;//
 
 	// Read command options
 	CommandOptionList opt_list;
@@ -43,7 +47,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		embd.dumpConfig();
 	}
 
-	embd.embed();
+	embd.embed(NULL);
 
 	return 0;
 }
@@ -54,6 +58,7 @@ void globalSetup(Embedder& embd) {
 	// ドライバのソースから配置情報を拾って来る
 	// Pick locating information from driver source code 
 	embd.loadLocationConfig(sGlobalConfig.getDriverConfigFileName().c_str());
+	embd.loadSourceBin(sGlobalConfig.getDriverImageFileName().c_str());
 
 	// MML文法に関するデータを登録
 	// Register grammer information

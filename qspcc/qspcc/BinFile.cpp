@@ -39,4 +39,6 @@ void BinFile::load(const char* filename) {
 	for (size_t i = 0; i < mFileSize; ++i) {
 		mContent[i] = tempBuf[i];
 	}
+
+	//fprintf(stderr, "Driver image: %s (%d Bytes)\n", filename, mFileSize);
 }

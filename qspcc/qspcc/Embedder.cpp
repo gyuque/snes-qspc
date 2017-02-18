@@ -23,6 +23,12 @@ void Embedder::dumpConfig() {
 	mConfig.dump();
 }
 
-void Embedder::embed() {
+void Embedder::embed(IEmbedderSource* pSeqSource) {
 
+}
+
+void Embedder::loadSourceBin(const char* filename) {
+	if (mpSourceBin) { return; }
+
+	mpSourceBin = new BinFile( filename );
 }
