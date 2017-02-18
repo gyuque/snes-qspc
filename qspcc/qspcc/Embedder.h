@@ -3,6 +3,7 @@
 
 #include "MusicDocument.h"
 #include "EmbedderConfig.h"
+#include "BinFile.h"
 
 class Embedder
 {
@@ -11,8 +12,12 @@ public:
 	virtual ~Embedder();
 
 	void loadLocationConfig(const char* filename);
+	void dumpConfig();
+
+	void embed();
 protected:
 	EmbedderConfig mConfig;
+	BinFile* mpSourceBin;
 };
 
 #endif

@@ -15,8 +15,13 @@ public:
 		return mDriverConfigFileName;
 	}
 
+	std::string getDriverImageFileName() const {
+		return mDriverImageFileName;
+	}
+
 protected:
 	std::string mDriverConfigFileName;
+	std::string mDriverImageFileName;
 };
 
 #endif

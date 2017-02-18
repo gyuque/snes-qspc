@@ -13,11 +13,17 @@ public:
 	virtual ~EmbedderConfig();
 
 	bool load(const char* filename);
+	void dump();
 
+	int getSequenceOrigin() const { return mSequenceEmbedPosition; }
+	int calcSequenceCapacity() const;
 protected:
 	EmbedAddressList mAllAddresses;
 	std::regex mReAddressConstant;
 	int mSequenceEmbedPosition;
+
+	int findNextPosition(int prevOrigin) const;
+	int countSizeToNext(int prevOrigin) const;
 
 	void parseLine(const std::string& ln);
 };

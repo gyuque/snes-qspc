@@ -40,7 +40,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (opt_summary.verboseLevel > 0) {
 		fprintf(stderr, "Embedding sequence data...\n");
+		embd.dumpConfig();
 	}
+
+	embd.embed();
 
 	return 0;
 }

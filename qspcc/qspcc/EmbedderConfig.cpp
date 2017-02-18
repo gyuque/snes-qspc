@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <algorithm>
 
 EmbedderConfig::EmbedderConfig() :
 	mSequenceEmbedPosition(0),
@@ -24,6 +25,8 @@ bool EmbedderConfig::load(const char* filename) {
 		parseLine(ln);
 	}
 
+	std::sort(mAllAddresses.begin(), mAllAddresses.end());
+
 	return true;
 }
 
@@ -45,4 +48,37 @@ void EmbedderConfig::parseLine(const std::string& ln) {
 		//std::cerr << decl_name << "  " << addr;
 		mAllAddresses.push_back(addr);
 	}
+}
+
+int EmbedderConfig::countSizeToNext(int prevOrigin) const {
+	const int nxt = findNextPosition(prevOrigin);
+	if (nxt > prevOrigin) {
+		return nxt - prevOrigin;
+	}
+
+	return -1;
+}
+
+int EmbedderConfig::findNextPosition(int prevOrigin) const {
+	EmbedAddressList::const_iterator it;
+	for (it = mAllAddresses.begin(); it != mAllAddresses.end(); it++) {
+		if (*it > prevOrigin) {
+			return *it;
+		}
+	}
+
+	return -1;
+}
+
+int EmbedderConfig::calcSequenceCapacity() const {
+	return countSizeToNext(mSequenceEmbedPosition);
+}
+
+void EmbedderConfig::dump() {
+	fprintf(stderr, "SPC embedder configuration\n");
+	fprintf(stderr, "--------------------------------------------------\n");
+	fprintf(stderr, "* Sequence data origin: %04Xh\n", mSequenceEmbedPosition);
+
+	const int sqsize = calcSequenceCapacity();
+	fprintf(stderr, "* Sequence data capacity: %d(%04Xh) bytes\n", sqsize, sqsize);
 }
