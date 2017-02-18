@@ -1,0 +1,21 @@
+#include <fstream>
+#include "picojson.h"
+#include "PicoJSONUtils.h"
+
+picojson::object jsonObjectFromFile(const char* filename) {
+    std::fstream inf(filename, std::ios::in);
+    if (!inf) {
+        picojson::object emp;
+        return emp;
+    }
+    
+    picojson::value j;
+    inf >> j;
+    
+    return j.get<picojson::object>();
+}
+
+bool jHasProperty(const picojson::object& o, const char* name) {
+    picojson::object::const_iterator iEnd = o.end();
+    return o.find(name) != iEnd;
+}
