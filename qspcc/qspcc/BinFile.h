@@ -10,6 +10,10 @@ public:
 	BinFile(const char* filename, bool verbose_mode = false);
 	virtual ~BinFile();
 
+	size_t size() const { return mFileSize; }
+	void writeByte(unsigned int position, uint8_t val);
+
+	bool exportToFile(const char* filename);
 protected:
 	uint8_t* mContent;
 	void load(const char* filename);

@@ -23,13 +23,16 @@ void registerMMLExpressionForm() {
 	rx_("OctDec"  , MX_ODEC  , "^>");
 	rx_("Term"    , MX_TERM  , "^;");
 
-	// combined notes
+	// combined commands(tuplet notes)
 	rx_("CmbStart", MX_CMB_START, "^\\{");
 	rx_("CmbEnd"  , MX_CMB_END  , "^\\}I?d?");
 
 	// local repeat
 	rx_("LRpStart", MX_LcREP_START, "^\\[I?");
 	rx_("LRpEnd"  , MX_LcREP_END  , "^\\]");
+
+	// #using
+	rx_("Using"   , MX_USINGDECL, "^U\"");
 }
 
 const MMLExpFormList& referExpressionFormList() {

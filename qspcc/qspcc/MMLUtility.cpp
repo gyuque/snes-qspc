@@ -125,3 +125,13 @@ uint8_t generateQVbits(int rawQ, int rawV) {
 
 	return (generateCompressedQ(rawQ) << 4) | generateCompressedVelocity(rawV);
 }
+
+
+
+std::string cleanStringLiteral(const std::string& original) {
+	std::regex re1("^\"");
+	std::regex re2("\"$");
+
+	std::string mid = std::regex_replace(original.c_str(), re1, "");
+	return std::regex_replace(mid.c_str(), re2, "");
+}

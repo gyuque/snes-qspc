@@ -4,12 +4,18 @@
 MusicDocument::MusicDocument()
 {
 	mGeneratedTrackLength = 0;
+	mpSeqSource = new BytesSourceProxy(mGeneratedSequenceBlob);
 }
 
 
 MusicDocument::~MusicDocument()
 {
 	releaseAllTracks();
+
+	if (mpSeqSource) {
+		delete mpSeqSource;
+		mpSeqSource = NULL;
+	}
 }
 
 void MusicDocument::releaseAllTracks() {
@@ -156,4 +162,23 @@ void MusicTrack::dump() {
 	}
 	fprintf(stderr, "\n");
 
+}
+
+
+
+// interface proxy
+BytesSourceProxy::BytesSourceProxy(const ByteList& sourceBytes) : mBytes(sourceBytes)
+{
+}
+
+BytesSourceProxy::~BytesSourceProxy() {
+
+}
+
+size_t BytesSourceProxy::esGetSize() {
+	return mBytes.size();
+}
+
+uint8_t BytesSourceProxy::esGetAt(unsigned int index) {
+	return mBytes.at(index);
 }

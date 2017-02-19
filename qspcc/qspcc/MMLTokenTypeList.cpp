@@ -32,7 +32,9 @@ void registerMMlTokenTypeList() {
 	rt_('}' , "CmbEnd"  , TT_CMB_END  , "^\\}");
 	rt_('[' , "LRpStart", TT_LcREP_START, "^/:");
 	rt_(']' , "LRpEnd"  , TT_LcREP_END, "^:/");
-	rt_('_' , "(blank)" , TT_BLANK, "^[\\t\\r\\n ]+");
+	rt_('_' , "(blank)" , TT_BLANK,     "^[\\t\\r\\n ]+");
+	rt_('"' , "StrLit"  , TT_STRLIT,    "^\"[^\"]*\"");
+	rt_('U' , "#using"  , TT_USING,     "^#[uU][sS][iI][nN][gG]");
 }
 
 const MMLTokTypeList& referTokenTypeList() {

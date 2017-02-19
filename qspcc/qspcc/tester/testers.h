@@ -1,6 +1,8 @@
 #ifndef TESTERS_H_INCLUDED
 #define TESTERS_H_INCLUDED
 
-void doDocumentTest();
+#include "../Embedder.h"
+
+void doDocumentTest(Embedder* pEmbedder);
 
 #endif

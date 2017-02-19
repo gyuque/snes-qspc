@@ -51,7 +51,10 @@ typedef enum _MMLTokenType {
 	TT_CMB_END,   // }
 
 	TT_LcREP_START, // /:
-	TT_LcREP_END    // :/
+	TT_LcREP_END,   // :/
+
+	TT_STRLIT,
+	TT_USING
 } MMLTokenType;
 
 typedef enum _MMLExpressionType {
@@ -68,7 +71,9 @@ typedef enum _MMLExpressionType {
 	MX_CMB_END,   // }
 
 	MX_LcREP_START, // /:n
-	MX_LcREP_END    // :/
+	MX_LcREP_END,   // :/
+
+	MX_USINGDECL
 } MMLExpressionType;
 
 

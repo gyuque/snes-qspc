@@ -1,7 +1,8 @@
 #include "MMLCompiler.h"
+#include "MMLPreprocessor.h"
 #include <iostream>
 
-MMLCompiler::MMLCompiler() :mpExprBuilder(NULL), mVerboseLevel(0)
+MMLCompiler::MMLCompiler() :mpExprBuilder(NULL), mVerboseLevel(0), mpLastDocument(NULL)
 {
 
 }
@@ -10,10 +11,18 @@ MMLCompiler::MMLCompiler() :mpExprBuilder(NULL), mVerboseLevel(0)
 MMLCompiler::~MMLCompiler()
 {
 	clearCommands();
+	releaseDocumentIf();
 
 	if (mpExprBuilder) {
 		delete mpExprBuilder;
 		mpExprBuilder = NULL;
+	}
+}
+
+void MMLCompiler::releaseDocumentIf() {
+	if (mpLastDocument) {
+		delete mpLastDocument;
+		mpLastDocument = NULL;
 	}
 }
 
@@ -61,6 +70,12 @@ bool MMLCompiler::compile(std::string filename) {
 		mpExprBuilder->dump();
 	}
 
+	// New document here.
+	releaseDocumentIf();
+	mpLastDocument = new MusicDocument();
+
+	preprocess();
+
 	generateCommands();
 	if (mVerboseLevel > 0) {
 		dumpAllCommands();
@@ -79,6 +94,26 @@ bool MMLCompiler::compile(std::string filename) {
 	generateByteCodeTracks();
 
 	return true;
+}
+
+void MMLCompiler::preprocess() {
+	if (!mpExprBuilder || !mpLastDocument) {
+		return;
+	}
+
+	const int n = mpExprBuilder->count();
+	if (mVerboseLevel > 0) {
+		fprintf(stderr, "Preprocessing expressions(len=%d)\n", n);
+	}
+
+	MMLPreprocessor pp(mpLastDocument);
+
+	for (int i = 0; i < n; ++i) {
+		MMLExprStruct* pX = mpExprBuilder->referAt(i);
+		if (pX) {
+			pp.processExpression(*pX);
+		}
+	}
 }
 
 void MMLCompiler::generateCommands() {
@@ -136,17 +171,15 @@ void MMLCompiler::applyContextDependentParams() {
 }
 
 void MMLCompiler::generateByteCodeTracks() {
-	MusicDocument doc;
-
 	const int numOfTracks = countTracks();
 	fprintf(stderr, "[  %d Track(s)  ]\n", numOfTracks);
 
 	for (int i = 0; i < numOfTracks; ++i) {
-		MusicTrack* track = doc.appendTrack();
+		MusicTrack* track = mpLastDocument->appendTrack();
 		generateATrack(i, track);
 	}
 
-	doc.calcDataSize(NULL, true);
+	mpLastDocument->calcDataSize(NULL, true);
 }
 
 void MMLCompiler::generateATrack(int trackIndex, MusicTrack* pTrack) {

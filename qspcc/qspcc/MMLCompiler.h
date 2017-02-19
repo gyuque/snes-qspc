@@ -21,9 +21,11 @@ public:
 	void dumpAllErrors();
 	void setVerboseLevel(int lv);
 protected:
+	void releaseDocumentIf();
 	bool shouldAbort() const;
 
 	void clearCommands();
+	void preprocess();
 	void generateCommands();
 	void applyContextDependentParams();
 	void generateByteCodeTracks();
@@ -34,6 +36,7 @@ protected:
 
 	int mVerboseLevel;
 
+	MusicDocument* mpLastDocument;
 	MMLTokenizer mTokenizer;
 	MMLExpressionBuilder* mpExprBuilder;
 	MMLCommandPtrList mCommandPtrList;

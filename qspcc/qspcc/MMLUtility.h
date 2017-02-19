@@ -18,4 +18,6 @@ uint8_t generateCompressedQ(int q);
 uint8_t generateCompressedVelocity(int v);
 uint8_t generateQVbits(int rawQ, int rawV);
 
+std::string cleanStringLiteral(const std::string& original);
+
 #endif

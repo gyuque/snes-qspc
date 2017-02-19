@@ -42,3 +42,22 @@ void BinFile::load(const char* filename) {
 
 	//fprintf(stderr, "Driver image: %s (%d Bytes)\n", filename, mFileSize);
 }
+
+void BinFile::writeByte(unsigned int position, uint8_t val) {
+	if (position < mFileSize) {
+		mContent[position] = val;
+	}
+}
+
+bool BinFile::exportToFile(const char* filename) {
+	FILE* fpOut = fopen(filename, "wb");
+	if (!fpOut) {
+		return false;
+	}
+
+	const size_t n = mFileSize;
+	fwrite(mContent, 1, n, fpOut);
+
+	fclose(fpOut);
+	return true;
+}

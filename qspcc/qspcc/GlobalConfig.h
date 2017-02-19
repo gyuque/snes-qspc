@@ -9,7 +9,8 @@ public:
 	GlobalConfig();
 	virtual ~GlobalConfig();
 
-	void load();
+	void setBaseDir(const std::string& baseDir);
+	bool load();
 
 	std::string getDriverConfigFileName() const {
 		return mDriverConfigFileName;
@@ -20,6 +21,7 @@ public:
 	}
 
 protected:
+	std::string mBaseDir;
 	std::string mDriverConfigFileName;
 	std::string mDriverImageFileName;
 };

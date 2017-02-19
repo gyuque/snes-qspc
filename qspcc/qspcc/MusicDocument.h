@@ -8,11 +8,14 @@
 typedef std::vector<class MusicTrack*> TrackPtrList;
 typedef std::vector<uint8_t> ByteList;
 
+class BytesSourceProxy;
+
 class MusicDocument
 {
 public:
 	MusicDocument();
 	virtual ~MusicDocument();
+	void setInstrumentSetName(const std::string& s) { mInstrumentSetName = s; }
 
 	class MusicTrack* appendTrack();
 	void calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo = false);
@@ -24,7 +27,12 @@ public:
 
 	int mGeneratedTrackLength;
 	ByteList mGeneratedSequenceBlob;
+
+	class BytesSourceProxy* referSequenceBytesSource() { return mpSeqSource; }
 protected:
+	class BytesSourceProxy* mpSeqSource;
+	std::string mInstrumentSetName;
+
 	void releaseAllTracks();
 	TrackPtrList mTrackPtrList;
 };
@@ -43,6 +51,17 @@ public:
 	void dump();
 protected:
 	ByteList mBytes;
+};
+
+class BytesSourceProxy : public IEmbedderSource {
+public:
+	BytesSourceProxy(const ByteList& sourceBytes);
+	virtual ~BytesSourceProxy();
+
+	virtual size_t esGetSize();
+	virtual uint8_t esGetAt(unsigned int index);
+protected:
+	const ByteList& mBytes;
 };
 
 #endif
