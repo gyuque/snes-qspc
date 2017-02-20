@@ -4,6 +4,7 @@
 #include <vector>
 #include "MMLCommand.h"
 #include "Embedder.h"
+#include "instrumentset/InstrumentSet.h"
 
 typedef std::vector<class MusicTrack*> TrackPtrList;
 typedef std::vector<uint8_t> ByteList;
@@ -16,6 +17,8 @@ public:
 	MusicDocument();
 	virtual ~MusicDocument();
 	void setInstrumentSetName(const std::string& s) { mInstrumentSetName = s; }
+	bool isInstrumentSetNameSet() const;
+	bool loadInstrumentSet();
 
 	class MusicTrack* appendTrack();
 	void calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo = false);
@@ -31,7 +34,10 @@ public:
 	class BytesSourceProxy* referSequenceBytesSource() { return mpSeqSource; }
 protected:
 	class BytesSourceProxy* mpSeqSource;
+	
 	std::string mInstrumentSetName;
+	InstrumentSet mInsts;
+
 
 	void releaseAllTracks();
 	TrackPtrList mTrackPtrList;

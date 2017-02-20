@@ -1,5 +1,5 @@
 #include "MusicDocument.h"
-
+#include "win32/isdir.h"
 
 MusicDocument::MusicDocument()
 {
@@ -38,6 +38,10 @@ MusicTrack* MusicDocument::appendTrack() {
 	MusicTrack* t = new MusicTrack();
 	mTrackPtrList.push_back(t);
 	return t;
+}
+
+bool MusicDocument::isInstrumentSetNameSet() const {
+	return mInstrumentSetName.size() > 0;
 }
 
 void MusicDocument::calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo) {
@@ -108,6 +112,28 @@ void MusicDocument::dumpSequenceBlob() {
 		}
 	}
 }
+
+bool MusicDocument::loadInstrumentSet() {
+	if (!isInstrumentSetNameSet()) { return false; }
+
+	const char* inst_dirname = mInstrumentSetName.c_str();
+	if (!isValidDirectory(inst_dirname)) {
+		fprintf(stderr, "'%s' not found\n", inst_dirname);
+		return false;
+	}
+
+	std::string manifestPath = mInstrumentSetName + "/manifest.json";
+	if (!checkFileExists(manifestPath.c_str())) {
+		fprintf(stderr, "'%s' not found\n", manifestPath.c_str() );
+		return false;
+	}
+
+	fprintf(stderr, "Loading instrument set: %s\n", manifestPath.c_str());
+	mInsts.load( manifestPath.c_str() );
+
+	return true;
+}
+
 
 
 MusicTrack::MusicTrack() {

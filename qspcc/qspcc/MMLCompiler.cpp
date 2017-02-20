@@ -75,6 +75,7 @@ bool MMLCompiler::compile(std::string filename) {
 	mpLastDocument = new MusicDocument();
 
 	preprocess();
+	mpLastDocument->loadInstrumentSet(); // プリプロセスでinst setが指定されている筈（されていなければエラー）
 
 	generateCommands();
 	if (mVerboseLevel > 0) {
