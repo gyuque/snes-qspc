@@ -61,3 +61,13 @@ bool BinFile::exportToFile(const char* filename) {
 	fclose(fpOut);
 	return true;
 }
+
+uint8_t BinFile::at(unsigned int pos) const {
+	if (pos >= mFileSize) { return 0; }
+	return mContent[pos];
+}
+
+void BinFile::writeAt(unsigned int pos, uint8_t val) {
+	if (pos >= mFileSize) { return; }
+	mContent[pos] = val;
+}

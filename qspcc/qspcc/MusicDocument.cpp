@@ -129,7 +129,7 @@ bool MusicDocument::loadInstrumentSet() {
 	}
 
 	fprintf(stderr, "Loading instrument set: %s\n", manifestPath.c_str());
-	mInsts.load( manifestPath.c_str() );
+	mInsts.load( manifestPath.c_str(), inst_dirname );
 
 	return true;
 }
