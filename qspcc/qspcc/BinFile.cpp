@@ -49,14 +49,17 @@ void BinFile::writeByte(unsigned int position, uint8_t val) {
 	}
 }
 
-bool BinFile::exportToFile(const char* filename) {
+bool BinFile::exportToFile(const char* filename, unsigned int startPos, int exportSize) {
 	FILE* fpOut = fopen(filename, "wb");
 	if (!fpOut) {
 		return false;
 	}
 
-	const size_t n = mFileSize;
-	fwrite(mContent, 1, n, fpOut);
+	int max = (int)(mFileSize - startPos);
+	int n = (exportSize < 0) ? max : exportSize;
+	if (n > max) { n = max; }
+
+	fwrite(mContent + startPos, 1, n, fpOut);
 
 	fclose(fpOut);
 	return true;

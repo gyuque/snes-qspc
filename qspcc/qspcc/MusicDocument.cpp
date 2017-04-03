@@ -1,10 +1,17 @@
+#include "MMLUtility.h"
 #include "MusicDocument.h"
 #include "win32/isdir.h"
 
 MusicDocument::MusicDocument()
 {
+	mTempo = 120;
 	mGeneratedTrackLength = 0;
+	mpMusicHeaderSource = new BytesSourceProxy(mMusicHeaderBlob);
 	mpSeqSource = new BytesSourceProxy(mGeneratedSequenceBlob);
+	mpInstDirSource = new BytesSourceProxy(mInstDirBlob);
+	mpBRRDirSource = new BytesSourceProxy(mBRRDirBlob);
+	mpBRRBlockSource = new BytesSourceProxy(mBRRBlockBlob);
+	mpFqTableSource = new BytesSourceProxy(mFqTableBlob);
 }
 
 
@@ -12,9 +19,34 @@ MusicDocument::~MusicDocument()
 {
 	releaseAllTracks();
 
+	if (mpMusicHeaderSource) {
+		delete mpMusicHeaderSource;
+		mpMusicHeaderSource = nullptr;
+	}
+
 	if (mpSeqSource) {
 		delete mpSeqSource;
-		mpSeqSource = NULL;
+		mpSeqSource = nullptr;
+	}
+
+	if (mpInstDirSource) {
+		delete mpInstDirSource;
+		mpInstDirSource = nullptr;
+	}
+
+	if (mpBRRDirSource) {
+		delete mpBRRDirSource;
+		mpBRRDirSource = nullptr;
+	}
+
+	if (mpBRRBlockSource) {
+		delete mpBRRBlockSource;
+		mpBRRBlockSource = nullptr;
+	}
+
+	if (mpFqTableSource) {
+		delete mpFqTableSource;
+		mpFqTableSource = nullptr;
 	}
 }
 
@@ -23,7 +55,7 @@ void MusicDocument::releaseAllTracks() {
 	for (size_t i = 0; i < n; ++i) {
 		if (mTrackPtrList[i]) {
 			delete mTrackPtrList[i];
-			mTrackPtrList[i] = NULL;
+			mTrackPtrList[i] = nullptr;
 		}
 	}
 
@@ -90,27 +122,28 @@ void MusicDocument::generateSequenceImage() {
 		}
 
 	}
+
+	generateHeaderImage();
+}
+
+static uint8_t calcTimerIntervalForTempo(unsigned int tempo) {
+	const double f = 60000.0 / (double)tempo; // Žl•ª‰¹•„‚Ì’·‚³‚ðŒvŽZ(ms)
+	return (uint8_t)(f / (48.0 * 0.125) + 0.49);
+}
+
+void MusicDocument::generateHeaderImage() {
+	mMusicHeaderBlob.clear();
+	mMusicHeaderBlob.push_back( countTracks() );
+	mMusicHeaderBlob.push_back( mGeneratedTrackLength >> 8 );
+	mMusicHeaderBlob.push_back( calcTimerIntervalForTempo(mTempo) );
+
+	dumpHex(mMusicHeaderBlob);
 }
 
 void MusicDocument::dumpSequenceBlob() {
 	fprintf(stderr, "Num of tracks: %d\n", countTracks());
 	fprintf(stderr, "Length of track: %d\n", mGeneratedTrackLength);
-	size_t n = mGeneratedSequenceBlob.size();
-	for (size_t i = 0; i < n; ++i) {
-		const int col = i % 16;
-
-		if (col == 0) {
-			fprintf(stderr, "%04X | ", i);
-		}
-
-		fprintf(stderr, "%02X", mGeneratedSequenceBlob.at(i));
-
-		if (col == 15) {
-			fprintf(stderr, "\n");
-		} else {
-			fprintf(stderr, " ");
-		}
-	}
+	dumpHex(mGeneratedSequenceBlob);
 }
 
 bool MusicDocument::loadInstrumentSet() {
@@ -131,8 +164,36 @@ bool MusicDocument::loadInstrumentSet() {
 	fprintf(stderr, "Loading instrument set: %s\n", manifestPath.c_str());
 	mInsts.load( manifestPath.c_str(), inst_dirname );
 
+	generateFqRegTableFromInsts();
 	return true;
 }
+
+void MusicDocument::generateInstrumentDataBinaries(unsigned int baseAddress) {
+	mInsts.exportPackedSrcTable(mBRRDirBlob, baseAddress);
+	mInsts.exportBRR(mBRRBlockBlob);
+
+	mInsts.exportPackedInstTable(mInstDirBlob);
+}
+
+void MusicDocument::generateFqRegTable(double baseFq, int originOctave) {
+	RawFqList fq_ls = generateNotesFqTable(originOctave, 6);
+	FqFactorList r_ls = generateFqFactorTable(fq_ls, baseFq);
+	mFqRegTable = generateFqRegisterValueTable(r_ls);
+
+	// write
+	mFqTableBlob.clear();
+	const size_t n = mFqRegTable.size();
+	for (size_t i = 0; i < n; ++i) {
+		const short& v = mFqRegTable[i];
+		mFqTableBlob.push_back( v & 0xFF );
+		mFqTableBlob.push_back( (v >> 8) & 0xFF);
+	}
+}
+
+void MusicDocument::generateFqRegTableFromInsts() {
+	generateFqRegTable( mInsts.getBaseEq(), mInsts.getOriginOctave() );
+}
+
 
 
 
@@ -189,7 +250,6 @@ void MusicTrack::dump() {
 	fprintf(stderr, "\n");
 
 }
-
 
 
 // interface proxy

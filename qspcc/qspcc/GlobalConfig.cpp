@@ -4,8 +4,11 @@
 
 #define kDriverConfigEntryName "driver-config"
 #define kDriverImageEntryName  "driver-image"
+#define kRomImageEntryName  "rom-image"
+#define kRomMapEntryName    "rom-map"
+#define kMaxTracksEntryName "max-tracks"
 
-GlobalConfig::GlobalConfig()
+GlobalConfig::GlobalConfig() : mMaxTracks(1)
 {
 	mBaseDir = ".";
 }
@@ -34,6 +37,18 @@ bool GlobalConfig::load() {
 
 	if (jHasProperty(j, kDriverImageEntryName)) {
 		mDriverImageFileName = j[kDriverImageEntryName].get<std::string>();
+	}
+
+	if (jHasProperty(j, kRomImageEntryName)) {
+		mRomImageFileName = j[kRomImageEntryName].get<std::string>();
+	}
+
+	if (jHasProperty(j, kRomMapEntryName)) {
+		mRomMapFileName = j[kRomMapEntryName].get<std::string>();
+	}
+
+	if (jHasProperty(j, kMaxTracksEntryName)) {
+		mMaxTracks = (int)( j[kMaxTracksEntryName].get<double>() );
 	}
 
 	return true;

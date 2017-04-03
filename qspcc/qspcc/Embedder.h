@@ -21,11 +21,22 @@ public:
 	bool loadSourceBin(const char* filename);
 	bool loadLocationConfig(const char* filename);
 	void dumpConfig();
-	bool exportToFile(const char* filename);
+	bool exportToFile(const char* filename, const char* hi_filename);
 
-	void embed(IEmbedderSource* pSeqSource);
+	void embed(
+		IEmbedderSource* pMusicHeaderSource,
+		IEmbedderSource* pFqTableSource,
+		IEmbedderSource* pSeqSource,
+		IEmbedderSource* pInstDirSource,
+		IEmbedderSource* pBRRDirSource,
+		IEmbedderSource* pBRRBodySource
+	);
 
 	void embedFromSource(IEmbedderSource* pSource, unsigned int origin, unsigned int capacity, const std::string& chunkName);
+	const EmbedderConfig& referConfig() const { return mConfig; }
+	const BinFile* referBin() const { return mpSourceBin; }
+
+	static BinFile* loadBinFileWithBase(const std::string& baseDir, const char* filename);
 protected:
 
 	std::string mBaseDir;

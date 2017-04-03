@@ -103,11 +103,12 @@ uint8_t generateCompressedTicks(DriverTick ot) {
 
 // For Q and Velocity bits
 uint8_t generateCompressedQ(int q) {
-	// ゲートタイムは3bits(00h-07h)に押し込める
+	// ゲートタイムは3bits(01h-07h)に押し込める
 	// MAX 16 -> 7
-	// MIN 1  -> 0
+	// MIN 1  -> 1
+	// 00h はタイ・スラー用の特別な値とする
 	if (q > 16) { q = 16; }
-	else if (q < 1) { q = 1; }
+	else if (q < 3) { q = 3; }
 
 	return (q - 1) / 2;
 }
@@ -134,4 +135,29 @@ std::string cleanStringLiteral(const std::string& original) {
 
 	std::string mid = std::regex_replace(original.c_str(), re1, "");
 	return std::regex_replace(mid.c_str(), re2, "");
+}
+
+
+void dumpHex(const ByteList& blob) {
+	size_t n = blob.size();
+
+	for (size_t i = 0; i < n; ++i) {
+		const int col = i % 16;
+
+		if (col == 0) {
+			fprintf(stderr, "%04X | ", i);
+		}
+
+		fprintf(stderr, "%02X", blob.at(i));
+
+		if (col == 15) {
+			fprintf(stderr, "\n");
+		} else {
+			fprintf(stderr, " ");
+		}
+	}
+
+	if (n % 16) {
+		fprintf(stderr, "\n");
+	}
 }

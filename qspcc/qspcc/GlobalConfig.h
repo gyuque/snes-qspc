@@ -20,10 +20,27 @@ public:
 		return mDriverImageFileName;
 	}
 
+	std::string getRomImageFileName() const {
+		return mRomImageFileName;
+	}
+
+	std::string getRomMapFileName() const {
+		return mRomMapFileName;
+	}
+
+	size_t getMaxTracks() const {
+		return mMaxTracks;
+	}
+
 protected:
 	std::string mBaseDir;
 	std::string mDriverConfigFileName;
 	std::string mDriverImageFileName;
+
+	std::string mRomImageFileName;
+	std::string mRomMapFileName;
+
+	size_t mMaxTracks;
 };
 
 #endif

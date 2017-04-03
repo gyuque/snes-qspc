@@ -20,6 +20,8 @@ public:
 	bool compile(std::string filename);
 	void dumpAllErrors();
 	void setVerboseLevel(int lv);
+
+	MusicDocument* referLastDocument() { return mpLastDocument; }
 protected:
 	void releaseDocumentIf();
 	bool shouldAbort() const;
@@ -27,8 +29,10 @@ protected:
 	void clearCommands();
 	void preprocess();
 	void generateCommands();
+	void appendTrackFooter();
 	void applyContextDependentParams();
 	void generateByteCodeTracks();
+	void determineCommandAddress(int trackIndex, MusicTrack* pTrack);
 	void generateATrack(int trackIndex, MusicTrack* pTrack);
 
 	void dumpAllCommands();

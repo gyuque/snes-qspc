@@ -33,10 +33,11 @@ bool ensureMessageRegistration() {
 		return false;
 	}
 
-	_er(MMLErrors::E_UNKNOWN_CHAR , "認識できない文字があります（MMLで利用できない文字がないか、または利用できる文字であっても不適切な位置にないか確認してください）");
-	_er(MMLErrors::E_UNKNOWN_EXPR , "認識できないトークン列があります（コマンドを伴わずに整数があるなど、正しくないトークンの並び方になっていないか確認してください）");
-	_er(MMLErrors::E_NESTED_TUP   , "連符を多重にすることはできません");
-	_er(MMLErrors::E_NESTED_REPEAT, "区間リピートを多重にすることはできません");
+	_er(MMLErrors::E_UNKNOWN_CHAR   , "認識できない文字があります（MMLで利用できない文字がないか、または利用できる文字であっても不適切な位置にないか確認してください）");
+	_er(MMLErrors::E_UNKNOWN_EXPR   , "認識できないトークン列があります（コマンドを伴わずに整数があるなど、正しくないトークンの並び方になっていないか確認してください）");
+	_er(MMLErrors::E_NESTED_TUP     , "連符を多重にすることはできません");
+	_er(MMLErrors::E_NESTED_REPEAT  , "区間リピートを多重にすることはできません");
+	_er(MMLErrors::E_RECURSIVE_MACRO, "マクロが再帰しています");
 
 	return true;
 }

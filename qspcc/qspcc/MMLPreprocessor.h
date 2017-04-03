@@ -14,6 +14,8 @@ public:
 protected:
 	MusicDocument* mpDocument;
 	void process_Using(const MMLExprStruct& expr);
+	void process_Title(const MMLExprStruct& expr);
+	void process_Artist(const MMLExprStruct& expr);
 };
 
 

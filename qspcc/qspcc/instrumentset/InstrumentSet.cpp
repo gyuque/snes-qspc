@@ -1,9 +1,10 @@
+#include "../MMLUtility.h"
 #include "InstrumentSet.h"
 #include "../win32/isdir.h"
 #include <iostream>
 static void array_if(uint8_t& outU8, const picojson::array& a, unsigned int pos);
 
-InstrumentSet::InstrumentSet()
+InstrumentSet::InstrumentSet() : mMaxInstIndex(0)
 {
 }
 
@@ -42,14 +43,32 @@ bool InstrumentSet::load(const char* manifestPath, const char* baseDir) {
 	buildSrcTable();
 	writeInstSrcNumbers();
 
-	dumpSrcTable();
-	dumpInstTable();
+//	dumpSrcTable();
+//	dumpInstTable();
+//	dumpPackedBRR();
 	return true;
 }
 
-void InstrumentSet::readInstDefs(picojson::object& parentObj) {
+unsigned int InstrumentSet::findMaxInst(const picojson::object& parentObj) {
 	char buf[8];
+	int m = 0;
+
 	for (int i = 0; i < 128; ++i) {
+		sprintf_s(buf, 8, "%d", i);
+
+		if (jHasProperty(parentObj, buf)) {
+			m = i;
+		}
+	}
+
+	return m;
+}
+
+void InstrumentSet::readInstDefs(picojson::object& parentObj) {
+	mMaxInstIndex = findMaxInst(parentObj);
+
+	char buf[8];
+	for (unsigned int i = 0; i <= mMaxInstIndex; ++i) {
 		sprintf_s(buf, 8, "%d", i);
 
 		if (jHasProperty(parentObj, buf)) {
@@ -59,12 +78,21 @@ void InstrumentSet::readInstDefs(picojson::object& parentObj) {
 				const std::string& brrFilename = def["brr"].get<std::string>();
 				addInst(def);
 			}
+		} else {
+			addDummyInst();
 		}
 	}
 }
 
 bool InstrumentSet::isInstDefValid(const picojson::object& def) {
 	return jHasProperty(def, "brr") && jHasProperty(def, "adsr");
+}
+
+void InstrumentSet::setDefaultADSR(InstADSR& outADSR) {
+	outADSR.A = 15;
+	outADSR.D = 7;
+	outADSR.Slv = 7;
+	outADSR.R = 18;
 }
 
 void InstrumentSet::addInst(const picojson::object& src) {
@@ -77,10 +105,7 @@ void InstrumentSet::addInst(const picojson::object& src) {
 		const picojson::array& j_adsr = src.at("adsr").get<picojson::array>();
 
 		// 初期値（指定が無くてもそれらしい音が鳴るように）
-		def_s.adsr.A   = 15;
-		def_s.adsr.D   = 7;
-		def_s.adsr.Slv = 7;
-		def_s.adsr.R   = 18;
+		setDefaultADSR(def_s.adsr);
 
 		// 指定値読み込み
 		array_if(def_s.adsr.A  , j_adsr, 0);
@@ -94,10 +119,25 @@ void InstrumentSet::addInst(const picojson::object& src) {
 	mInstList.push_back(def_s);
 }
 
+void InstrumentSet::addDummyInst() {
+	InstDef def_s;
+	def_s.srcn = 0;
+	def_s.filename = DUMMY_INST_WAV_NAME;
+	setDefaultADSR(def_s.adsr);
+
+	mInstList.push_back(def_s);
+}
+
 bool InstrumentSet::loadBRRBodies(const std::string& baseDir) {
 	InstDefList::const_iterator it;
 	for (it = mInstList.begin(); it != mInstList.end(); it++) {
 		const std::string& fn = it->filename;
+
+		if (0 == fn.compare(DUMMY_INST_WAV_NAME)) {
+			// ダミーなのでBRRファイルは存在しない
+			continue;
+		}
+
 		std::string path = baseDir + '/' + fn;
 		loadBRRIf(fn, path);
 	}
@@ -186,7 +226,12 @@ void InstrumentSet::dumpSrcTable() {
 		const WavSrc& s = mSrcList[i];
 		fprintf(stderr, "%3d | %04X | %04X | %s\n", i, s.attackOffset, s.loopOffset, s.brrName.c_str());
 	}
-	fprintf(stderr, "----+------+------+---------------------\n\n");
+	fprintf(stderr, "----+------+------+---------------------\nBin:\n");
+
+	ByteList stbytes;
+	exportPackedSrcTable(stbytes, 0);
+	dumpHex(stbytes);
+	fprintf(stderr, "----------------------------------------\n\n");
 }
 
 void InstrumentSet::writeInstSrcNumbers() {
@@ -206,8 +251,64 @@ void InstrumentSet::dumpInstTable() {
 	for (int i = 0; i < n; ++i) {
 		const InstDef& def = mInstList[i];
 
-		fprintf(stderr, "%3d | %4d | %d, %d, %d, %d\n", i, def.srcn, def.adsr.A, def.adsr.D, def.adsr.Slv, def.adsr.R);
+		char dmy_mark = ' ';
+		if (0 == def.filename.compare(DUMMY_INST_WAV_NAME)) { dmy_mark = '*'; }
+		fprintf(stderr, "%3d%c| %4d | %d, %d, %d, %d\n", i, dmy_mark, def.srcn, def.adsr.A, def.adsr.D, def.adsr.Slv, def.adsr.R);
 	}
+
+	fprintf(stderr, "----+------+----------------------------\nBin:\n");
+	ByteList bs;
+	exportPackedInstTable(bs);
+	dumpHex(bs);
+	fprintf(stderr, "----------------------------------------\n\n");
+}
+
+void InstrumentSet::dumpPackedBRR() {
+	fprintf(stderr, "BRR body:\n");
+
+	ByteList bytes;
+	mBRRPacker.exportAll(bytes);
+	dumpHex(bytes);
+}
+
+void InstrumentSet::exportPackedSrcTable(ByteList& outBytes, unsigned int baseAddr) {
+	const int n = mSrcList.size();
+
+	for (int i = 0; i < n; ++i) {
+		const WavSrc& s = mSrcList[i];
+		const unsigned int a = baseAddr + s.attackOffset;
+		const unsigned int l = baseAddr + s.loopOffset;
+
+		outBytes.push_back(a & 0xFF);
+		outBytes.push_back((a >> 8) & 0xFF);
+		outBytes.push_back(l & 0xFF);
+		outBytes.push_back((l >> 8) & 0xFF);
+	}
+}
+
+void InstrumentSet::exportPackedInstTable(ByteList& outBytes) {
+	const int n = mInstList.size();
+	for (int i = 0; i < n; ++i) {
+		const InstDef& def = mInstList[i];
+		
+		outBytes.push_back(def.srcn);
+		outBytes.push_back(makeADregister(def.adsr));
+		outBytes.push_back(makeSRregister(def.adsr));
+		outBytes.push_back(0);
+	}
+}
+
+void InstrumentSet::exportBRR(ByteList& outBytes) {
+	mBRRPacker.exportAll(outBytes);
+}
+
+uint8_t InstrumentSet::makeADregister(const InstADSR& inADSR) {
+	//     v- ENABLE bit
+	return 0x80         | (inADSR.A & 0x0F) | ((inADSR.D & 0x07) << 4);
+}
+
+uint8_t InstrumentSet::makeSRregister(const InstADSR& inADSR) {
+	return ((inADSR.Slv & 0x07) << 5) | (inADSR.R & 0x1F);
 }
 
 void array_if(uint8_t& outU8, const picojson::array& a, unsigned int pos) {

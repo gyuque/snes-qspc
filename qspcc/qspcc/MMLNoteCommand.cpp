@@ -5,6 +5,7 @@
 // ======= Note [a-g] =======
 MMLNoteCommand::MMLNoteCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression)
 {
+	mTie = false;
 	mQ = MML_QMAX;
 	mVelo = MML_VMAX;
 	mAbsPI = mRelPI = 0;
@@ -20,6 +21,19 @@ MMLNoteCommand::~MMLNoteCommand()
 
 }
 
+bool MMLNoteCommand::findTieToken(const MMLExprStruct& expr) {
+	const MMLTokenList& tl = expr.tokenList;
+	MMLTokenList::const_iterator it;
+
+	for (it = tl.begin(); it != tl.end(); it++) {
+		if (it->type == TT_AMP) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void MMLNoteCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
 	const MMLTokenList& tl = sourceExpression.tokenList;
 	if (tl.size() > 0) {
@@ -27,6 +41,8 @@ void MMLNoteCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
 
 		mRelPI = fromKeyNameToIndex(tl[0].rawStr);
 		// fprintf(stderr, "[%s %d]", tl[0].rawStr.c_str(), mRelPI);
+
+		mTie = findTieToken(sourceExpression);
 	}
 }
 
@@ -35,6 +51,11 @@ void MMLNoteCommand::dump() {
 	if (mNLen.tuplet > 1) {
 		fprintf(stderr, " (%d)", mNLen.tuplet);
 	}
+
+	if (mTie) {
+		fprintf(stderr, " &");
+	}
+
 	fprintf(stderr, "]\n");
 }
 
@@ -46,10 +67,13 @@ void MMLNoteCommand::applyContext(const ParamsContext& inContext) {
 	if (mRelPI == KEY_NAME_REST) {
 		mAbsPI = mRelPI;
 	} else {
-		mAbsPI = mRelPI + 12 * inContext.currentOctave;
+		mAbsPI = mRelPI + 12 * inContext.currentOctave + inContext.nShift;
 	}
+
 	// Q(gate time)
 	mQ = inContext.q;
+	// V(velocity)
+	mVelo = inContext.v;
 }
 
 int MMLNoteCommand::calcNoteBytes() {
@@ -67,7 +91,7 @@ int MMLNoteCommand::calcNoteBytes() {
 // 第3バイト: 00h-7Fh（休符なら省略 Q 3bits | Velo 4bits）
 
 uint8_t MMLNoteCommand::getCode(int index) {
-	int k;
+	uint8_t qv = 0;
 
 	switch (index)
 	{
@@ -76,7 +100,12 @@ uint8_t MMLNoteCommand::getCode(int index) {
 		break;
 
 	case 2: //3rd (a-g only)
-		return generateQVbits(mQ, mVelo);
+		qv = generateQVbits(mQ, mVelo);
+		if (mTie) {
+			qv &= 0x0F; // Q=0 でタイ・スラーを表す
+		}
+
+		return qv;
 		break;
 
 	default: // 1st

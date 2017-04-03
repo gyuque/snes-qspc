@@ -3,6 +3,7 @@
 
 #include <string>
 #include <stdint.h>
+#include "mml_types.h"
 #include "MMLTokenizer.h"
 
 #define KEY_NAME_NOT_FOUND (-99)
@@ -19,5 +20,7 @@ uint8_t generateCompressedVelocity(int v);
 uint8_t generateQVbits(int rawQ, int rawV);
 
 std::string cleanStringLiteral(const std::string& original);
+
+void dumpHex(const ByteList& blob);
 
 #endif

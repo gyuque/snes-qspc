@@ -3,6 +3,7 @@
 
 #include "MMLTokenizer.h"
 #include "IMMLError.h"
+#include "MacroDictionary.h"
 
 class MMLExpressionBuilder
 {
@@ -15,12 +16,15 @@ public:
 		mpErrorRecv = er;
 	}
 
-	bool buildExpressions();
+	bool buildExpressions(MacroDictionary& macroDic);
 	void dump();
 
 	int count() const;
 	MMLExprStruct* referAt(int index);
 protected:
+	MMLTokenList mExpandedTokenList;
+	std::string mExpandedTokenLetters;
+
 	IMMLError* mpErrorRecv;
 
 	int mReadPos;
@@ -29,8 +33,13 @@ protected:
 	class MMLTokenizer* mpSourceTokenizer;
 	int mVerboseLevel;
 
-	bool matchExpressionForm();
-	void raiseExpressionError();
+	bool matchMacroDefinitionExpressionForm(MacroDictionary& macroDic);
+	static bool matchExpressionForm(MMLExprList& outXList, int& inoutReadPos, const MMLTokenList& inTokenList, const char* letterString, int verboseLevel);
+	void raiseExpressionError(int tokenPos);
+
+	void generateMacroExpandedTokenList(MacroDictionary& macroDic);
+	void expandMacrosInTokenList(MMLTokenList& outList, const MMLTokenList& inList, MacroDictionary& macroDic, int nestLevel);
+	static void generateTokenLetterList(std::string& outStr, const MMLTokenList& inList);
 };
 
 #endif

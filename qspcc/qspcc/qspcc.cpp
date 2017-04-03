@@ -1,15 +1,23 @@
 #include "stdafx.h"
 #include <iostream>
 #include "MMLCompiler.h"
+#include <vector>
 #include "GlobalConfig.h"
 #include "Embedder.h"
+#include "ROMEmbedder.h"
 #include "CommandOptions.h"
 #include "tester/testers.h"
 #include "win32/pwd.h"
 
+typedef std::vector<MMLCompiler*> PCompilerList;
+
+static PCompilerList sCompilerList;
 static GlobalConfig sGlobalConfig;
 static bool globalSetup(Embedder& embd);
 static void showUsage();
+static void releaseAllCompilers(PCompilerList& inoutCompilerList);
+
+static bool addCompiler(PCompilerList& outCompilerList, const std::string inputFile, const CommandOptionsSummary& opt_summary, const EmbedderConfig& embd_config);
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -20,7 +28,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 //doDocumentTest(&embd);
-//return 0;//
+//doFrequencyTableTest();
+//return 0; //
 
 	// Read command options
 	CommandOptionList opt_list;
@@ -42,18 +51,89 @@ int _tmain(int argc, _TCHAR* argv[])
 		fprintf(stderr, "Verbose mode enabled. (Level=%d)\n", opt_summary.verboseLevel);
 	}
 
+	size_t i;
+	// ==== 各MMLファイルをコンパイル ====
+	const StringArgList& infileList = opt_summary.inputFileList;
+	const size_t nFiles = infileList.size();
+	for (i = 0; i < nFiles; ++i) {
+		addCompiler(sCompilerList, infileList[i], opt_summary, embd.referConfig());
+	}
+	/**
 	MMLCompiler compiler;
 	compiler.setVerboseLevel( opt_summary.verboseLevel );
 	compiler.compile( opt_summary.inputFileList[0].c_str() );
+	*/
 
 	if (opt_summary.verboseLevel > 0) {
 		fprintf(stderr, "Embedding sequence data...\n");
 		embd.dumpConfig();
 	}
 
-	embd.embed(NULL);
+	// ==== コンパイル済みデータを埋め込み ====
+	ROMEmbedder r_embd;
+	r_embd.setConfig(&embd.referConfig());
+	r_embd.setBaseDir(getSelfDir());
+	r_embd.loadTemplate(sGlobalConfig.getRomImageFileName(), sGlobalConfig.getRomMapFileName());
 
+	const size_t nCompiledFiles = sCompilerList.size();
+	for (i = 0; i < nCompiledFiles; ++i) {
+		MMLCompiler* pCompiler = sCompilerList[i];
+		MusicDocument* pDoc = pCompiler->referLastDocument();
+
+		// ドライバイメージに書き込み
+		embd.embed(
+			pDoc->referMusicHeaderSource(),
+			pDoc->referFqTableBytesSource(),
+			pDoc->referSequenceBytesSource(),
+			pDoc->referInstDirBytesSource(),
+			pDoc->referBRRDirBytesSource(),
+			pDoc->referBRRBodyBytesSource()
+			);
+
+		const BinFile* driverBin = embd.referBin();
+		r_embd.writeMetadata(i, pDoc->getTitle(), pDoc->getArtistName());
+		r_embd.writeSoundDriverImage(i, driverBin);
+	}
+
+	embd.exportToFile("drvimg-lo.bin", "drvimg-hi.bin");
+
+
+
+	releaseAllCompilers(sCompilerList);
 	return 0;
+}
+
+bool addCompiler(PCompilerList& outCompilerList, const std::string inputFile, const CommandOptionsSummary& opt_summary, const EmbedderConfig& embd_config) {
+	MMLCompiler* compiler = new MMLCompiler();
+	compiler->setVerboseLevel(opt_summary.verboseLevel);
+	if (!compiler->compile(inputFile)) {
+		return false;
+	}
+
+	MusicDocument* doc = compiler->referLastDocument();
+	// バイナリ生成
+	doc->generateSequenceImage();
+	doc->generateInstrumentDataBinaries(
+		embd_config.getProgramOrigin() + embd_config.getBRRBodyOrigin()
+		);
+
+	if (opt_summary.verboseLevel > 0) {
+		doc->dumpSequenceBlob();
+	}
+
+	outCompilerList.push_back(compiler);
+	return true;
+}
+
+void releaseAllCompilers(PCompilerList& inoutCompilerList) {
+	const size_t n = inoutCompilerList.size();
+	for (size_t i = 0; i < n; ++i) {
+		if (inoutCompilerList[i]) {
+			delete inoutCompilerList[i];
+		}
+	}
+
+	inoutCompilerList.clear();
 }
 
 bool globalSetup(Embedder& embd) {
@@ -78,9 +158,14 @@ void showUsage() {
 	fprintf(stderr, "qSPC version 1.9.0\n");
 	fprintf(stderr, "--------------------------------------------------------\n");
 	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  qspc -i <input mml 1> <input mml 2> <input mml 3>...\n\n");
+	fprintf(stderr, "  qspc [options] -i <input mml 1> -i <input mml 2> -i <input mml 3>...\n");
+	fprintf(stderr, "    or simply\n");
+	fprintf(stderr, "  qspc <input mml 1> <input mml 2> <input mml 3>...\n\n");
 	fprintf(stderr, "All options:\n");
-	fprintf(stderr, "  -i : Input mml file(s)\n");
-	fprintf(stderr, "  -v : Verbose mode\n");
-	fprintf(stderr, "  -V : Very verbose mode\n");
+	fprintf(stderr, "  -i  : Input mml file\n");
+	fprintf(stderr, "  -rom: Generate SNES ROM file only\n");
+	fprintf(stderr, "  -spc: Generate SPC file only\n");
+	fprintf(stderr, "  -q  : Quick load mode (TRACKS MUST SHARE INSTRUMENTS)\n");
+	fprintf(stderr, "  -v  : Verbose mode\n");
+	fprintf(stderr, "  -V  : Very verbose mode\n");
 }

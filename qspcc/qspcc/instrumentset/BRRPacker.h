@@ -2,6 +2,7 @@
 #define BRRPACKER_H_INCLUDED
 
 #include "C700BRR.h"
+#include "../mml_types.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -22,9 +23,13 @@ public:
 
 	int getAttackOffsetByName(const std::string& name) const;
 	int getLoopOffsetByName(const std::string& name, bool fallbackToDummy = false) const;
+
+	void exportAll(ByteList& outBytes);
+	// void exportSrcEntry(ByteList& outBytes, const std::string& name);
 protected:
 	void push_block(const PackedBRRBlock& block);
 	unsigned int addBlocks(const C700BRR* pBRR, bool is_loop);
+	void exportBlock(ByteList& outBytes, const PackedBRRBlock& block);
 
 	unsigned int mCurrentBytesSize;
 	PackedBlockList mBlockList;

@@ -58,10 +58,12 @@ bool MMLCompiler::compile(std::string filename) {
 		return false;
 	}
 
+	MacroDictionary macro_dic;
+
 	mpExprBuilder = new MMLExpressionBuilder(&mTokenizer);
 	mpExprBuilder->setErrorReceiver(this);
 	mpExprBuilder->setVerboseLevel(mVerboseLevel);
-	if (!mpExprBuilder->buildExpressions()) {
+	if (!mpExprBuilder->buildExpressions(macro_dic)) {
 		dumpAllErrors();
 		return false;
 	}
@@ -126,7 +128,10 @@ void MMLCompiler::generateCommands() {
 	if (mVerboseLevel > 0) {
 		fprintf(stderr, "Generating commands from expressions(len=%d)\n", n);
 	}
+
+	bool last_is_footer = false;
 	for (int i = 0; i < n; ++i) {
+		last_is_footer = false;
 		MMLExprStruct* pX = mpExprBuilder->referAt(i);
 		if (pX) {
 			MMLCommand* pCmd = createMMLCommandFromExpr(*pX);
@@ -135,8 +140,26 @@ void MMLCompiler::generateCommands() {
 				pCmd->setErrorReceiver(this);
 				mCommandPtrList.push_back(pCmd);
 			}
+
+			if (pX->exprType == MX_TERM) {
+				// トラック終端の後に全体リピート用のコマンドを追加
+				appendTrackFooter();
+				last_is_footer = true;
+			}
 		}
 	}
+
+	if (!last_is_footer) {
+		// 最後のトラックに終端がなかった場合はここでフッタ追加
+		appendTrackFooter();
+	}
+}
+
+void MMLCompiler::appendTrackFooter() {
+	MMLExprStruct dmyExpr;
+	dmyExpr.exprType = MX_TERM;
+	MMLFooterCommand* cmd = new MMLFooterCommand(dmyExpr);
+	mCommandPtrList.push_back(cmd);
 }
 
 void MMLCompiler::applyContextDependentParams() {
@@ -162,6 +185,9 @@ void MMLCompiler::applyContextDependentParams() {
 				pCmd->processGrouping(ctx, mCommandPtrList, i);
 			}
 
+			// ドキュメント全体に影響するコマンドはここで反映
+			pCmd->configureDocument(mpLastDocument);
+
 			ctx.groupingNeeded = false;
 		}
 
@@ -177,10 +203,27 @@ void MMLCompiler::generateByteCodeTracks() {
 
 	for (int i = 0; i < numOfTracks; ++i) {
 		MusicTrack* track = mpLastDocument->appendTrack();
+		determineCommandAddress(i, track);
 		generateATrack(i, track);
 	}
 
 	mpLastDocument->calcDataSize(NULL, true);
+}
+
+void MMLCompiler::determineCommandAddress(int trackIndex, MusicTrack* pTrack) {
+	int address = 0;
+
+	const int n = (int)(mCommandPtrList.size());
+	for (int i = 0; i < n; ++i) {
+		MMLCommand* pCmd = mCommandPtrList[i];
+		if (pCmd->getAssignedTrack() == trackIndex) {
+			// バイトコードの位置をコマンドオブジェクト内に記録
+			pCmd->setByteCodePosition(address);
+
+			const int blen = pCmd->countCodeBytes();
+			address += blen;
+		}
+	}
 }
 
 void MMLCompiler::generateATrack(int trackIndex, MusicTrack* pTrack) {
@@ -200,15 +243,7 @@ void MMLCompiler::generateATrack(int trackIndex, MusicTrack* pTrack) {
 					const int newPosition = pTrack->size();
 
 					pTrack->addByte(bc);
-
-					// 最初のバイトコードの位置をコマンドオブジェクト内に記録
-					if (k == 0) {
-						pCmd->setByteCodePosition(newPosition);
-					}
 				}
-			} else {
-				// バイトコードを生成しないコマンドの場合も現在位置を記録（リピートなどのため）
-				pCmd->setByteCodePosition( pTrack->size() );
 			}
 		}
 	}

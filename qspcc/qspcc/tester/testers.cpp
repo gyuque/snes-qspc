@@ -1,6 +1,7 @@
 #include "testers.h"
 
 #include "../MusicDocument.h"
+#include "../FrequencyTable.h"
 
 void doDocumentTest(Embedder* pEmbedder) {
 	MusicDocument doc;
@@ -18,6 +19,16 @@ void doDocumentTest(Embedder* pEmbedder) {
 	BytesSourceProxy* pSeqSrc = doc.referSequenceBytesSource();
 	fprintf(stderr, "<%d> %02X %02X\n", pSeqSrc->esGetSize(), pSeqSrc->esGetAt(256), pSeqSrc->esGetAt(257));
 
-	pEmbedder->embed(pSeqSrc);
+	pEmbedder->embed(nullptr, nullptr, pSeqSrc, nullptr, nullptr, nullptr);
 //	pEmbedder->exportToFile("test-out.bin");
+}
+
+void doFrequencyTableTest() {
+	RawFqList fq_ls = generateNotesFqTable(1, 6);
+	//dumpRawFqTable(fq_ls);
+	FqFactorList r_ls = generateFqFactorTable(fq_ls, 500.0);
+	//dumpFqFactorTable(r_ls);
+
+	FqRegisterValueList regval_list = generateFqRegisterValueTable(r_ls);
+	dumpFqRegisterValueTable(fq_ls, regval_list);
 }

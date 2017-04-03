@@ -103,7 +103,7 @@ void C700BRR::exportLoopBlock(PackedBRRBlock& outBlock, unsigned int relBlockInd
 }
 
 void C700BRR::exportBlock(PackedBRRBlock& outBlock, unsigned int blockIndex) const {
-	int pos = blockIndex * 9;
+	int pos = 2 + blockIndex * 9;
 
 	outBlock.header = mpBin->at(pos++);
 

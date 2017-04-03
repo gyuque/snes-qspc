@@ -4,5 +4,6 @@
 #include "../Embedder.h"
 
 void doDocumentTest(Embedder* pEmbedder);
+void doFrequencyTableTest();
 
 #endif

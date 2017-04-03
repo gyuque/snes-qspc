@@ -88,3 +88,29 @@ void BRRPacker::addDummyBlock() {
 	push_block(b);
 	mLoopNameMap[DUMMY_BLOCK_NAME] = l_offset;
 }
+
+void BRRPacker::exportAll(ByteList& outBytes) {
+	const size_t n = mBlockList.size();
+
+	for (size_t i = 0; i < n; ++i) {
+		exportBlock(outBytes, mBlockList[i]);
+	}
+}
+
+void BRRPacker::exportBlock(ByteList& outBytes, const PackedBRRBlock& block) {
+	outBytes.push_back( block.header );
+	for (int i = 0; i < BRR_BODY_LEN; ++i) {
+		outBytes.push_back(block.body[i]);
+	}
+}
+
+/*
+void BRRPacker::exportSrcEntry(ByteList& outBytes, const std::string& name) {
+	const uint16_t a = (uint16_t)( getAttackOffsetByName(name) );
+	const uint16_t l = (uint16_t)( getLoopOffsetByName(name, true) );
+
+	outBytes.push_back(a & 0xFF);
+	outBytes.push_back((a >> 8) & 0xFF);
+	outBytes.push_back(l & 0xFF);
+	outBytes.push_back((l >> 8) & 0xFF);
+}*/

@@ -1,6 +1,7 @@
 #ifndef MMLPARSER_H_INCLUDED
 #define MMLPARSER_H_INCLUDED
 #include "IMMLError.h"
+#include "mml_types.h"
 
 #include <string>
 #include <vector>
@@ -34,55 +35,13 @@ typedef enum _MMLExprBuildResult {
 
 
 
-typedef enum _MMLTokenType {
-	TT_BLANK,
-	TT_TEMPO_CMD,
-	TT_OCT_CMD,
-	TT_LEN_CMD,
-	TT_QSET_CMD,
-	TT_OINC_CMD,
-	TT_ODEC_CMD,
-	TT_NOTE,
-	TT_INTEGER,
-	TT_DOTS,
-	TT_TERM, // ;
-
-	TT_CMB_START, // {
-	TT_CMB_END,   // }
-
-	TT_LcREP_START, // /:
-	TT_LcREP_END,   // :/
-
-	TT_STRLIT,
-	TT_USING
-} MMLTokenType;
-
-typedef enum _MMLExpressionType {
-	MX_TEMPO,
-	MX_OCTSET,
-	MX_LENSET,
-	MX_QSET,
-	MX_OINC,
-	MX_ODEC,
-	MX_NOTE,
-	MX_TERM,
-
-	MX_CMB_START, // {
-	MX_CMB_END,   // }
-
-	MX_LcREP_START, // /:n
-	MX_LcREP_END,   // :/
-
-	MX_USINGDECL
-} MMLExpressionType;
-
-
 
 typedef struct _MMLTokenStruct {
 	std::string rawStr;
 	MMLTokenType type;
 
 	int intVal;
+	bool is_macrodef;
 
 	// Source information
 	int colNo;
@@ -95,12 +54,6 @@ typedef struct _MMLExprStruct {
 	MMLExpressionType exprType;
 	MMLTokenList tokenList;
 } MMLExprStruct;
-
-typedef struct _NoteLength {
-	int N;
-	int dots;
-	int tuplet;
-} NoteLength;
 
 typedef std::vector<MMLExprStruct> MMLExprList;
 
@@ -127,6 +80,8 @@ public:
 	const std::string& referTokenTypeLetterList() const {
 		return mTokenTypeLetterList;
 	}
+
+	void markAsMacroDefinition(unsigned int position);
 protected:
 	IMMLError* mpErrorRecv;
 
@@ -197,6 +152,7 @@ protected:
 
 void registerMMlTokenTypeList();
 const MMLTokTypeList& referTokenTypeList();
+char getTokenTypeLetterFromTypeId(MMLTokenType tid);
 void registerMMLExpressionForm();
 const MMLExpFormList& referExpressionFormList();
 

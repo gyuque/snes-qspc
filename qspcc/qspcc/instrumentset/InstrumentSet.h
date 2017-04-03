@@ -6,6 +6,8 @@
 #include "BRRPacker.h"
 #include <vector>
 
+#define DUMMY_INST_WAV_NAME "*dmy*"
+
 typedef struct _InstADSR {
 	uint8_t A;
 	uint8_t D;
@@ -38,15 +40,29 @@ public:
 	bool load(const char* manifestPath, const char* baseDir);
 
 	C700BRR* findBRR(const std::string& name) const;
+	static void setDefaultADSR(InstADSR& outADSR);
+	static uint8_t makeADregister(const InstADSR& inADSR);
+	static uint8_t makeSRregister(const InstADSR& inADSR);
+
+	void dumpPackedBRR();
+	void exportBRR(ByteList& outBytes);
+	void exportPackedSrcTable(ByteList& outBytes, unsigned int baseAddr);
+	void exportPackedInstTable(ByteList& outBytes);
+
+	float getBaseEq() const { return mBaseFq; }
+	int getOriginOctave() const { return mOriginOctave; }
 protected:
 	float mBaseFq;
 	int mOriginOctave;
 	InstDefList mInstList;
+	unsigned int mMaxInstIndex;
 
+	unsigned int findMaxInst(const picojson::object& parentObj);
 	void readInstDefs(picojson::object& parentObj);
 	static bool isInstDefValid(const picojson::object& def);
 
 	void addInst(const picojson::object& src);
+	void addDummyInst();
 	bool loadBRRBodies(const std::string& baseDir);
 	bool loadBRRIf(const std::string& name, const std::string& path);
 	void releaseAllBRRs();

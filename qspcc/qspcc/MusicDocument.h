@@ -2,12 +2,13 @@
 #define MUSICDOCUMENT_H_INCLUDED
 
 #include <vector>
+#include "mml_types.h"
 #include "MMLCommand.h"
 #include "Embedder.h"
 #include "instrumentset/InstrumentSet.h"
+#include "FrequencyTable.h"
 
 typedef std::vector<class MusicTrack*> TrackPtrList;
-typedef std::vector<uint8_t> ByteList;
 
 class BytesSourceProxy;
 
@@ -16,9 +17,17 @@ class MusicDocument
 public:
 	MusicDocument();
 	virtual ~MusicDocument();
+	void setTempo(unsigned int t) { mTempo = t; }
 	void setInstrumentSetName(const std::string& s) { mInstrumentSetName = s; }
+	void setTitle(const std::string& s) { mTitle = s; }
+	void setArtistName(const std::string& s) { mArtistName = s; }
+
+	const std::string& getTitle() const { return mTitle; }
+	const std::string& getArtistName() const { return mArtistName; }
+
 	bool isInstrumentSetNameSet() const;
 	bool loadInstrumentSet();
+	void generateInstrumentDataBinaries(unsigned int baseAddress);
 
 	class MusicTrack* appendTrack();
 	void calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo = false);
@@ -29,16 +38,42 @@ public:
 	void dumpSequenceBlob();
 
 	int mGeneratedTrackLength;
-	ByteList mGeneratedSequenceBlob;
 
+	class BytesSourceProxy* referMusicHeaderSource() { return mpMusicHeaderSource; }
+	class BytesSourceProxy* referFqTableBytesSource() { return mpFqTableSource; }
 	class BytesSourceProxy* referSequenceBytesSource() { return mpSeqSource; }
+	class BytesSourceProxy* referInstDirBytesSource() { return mpInstDirSource; }
+	class BytesSourceProxy* referBRRDirBytesSource() { return mpBRRDirSource; }
+	class BytesSourceProxy* referBRRBodyBytesSource() { return mpBRRBlockSource; }
 protected:
+	unsigned int mTempo;
+
+	// FqTable
+	FqRegisterValueList mFqRegTable;
+	void generateFqRegTable(double baseFq, int originOctave);
+	void generateFqRegTableFromInsts();
+
+	class BytesSourceProxy* mpMusicHeaderSource;
 	class BytesSourceProxy* mpSeqSource;
-	
+	class BytesSourceProxy* mpInstDirSource;
+	class BytesSourceProxy* mpBRRDirSource;
+	class BytesSourceProxy* mpBRRBlockSource;
+
+	class BytesSourceProxy* mpFqTableSource;
+
+	ByteList mMusicHeaderBlob;
+	ByteList mGeneratedSequenceBlob;
+	ByteList mInstDirBlob;
+	ByteList mBRRDirBlob;
+	ByteList mBRRBlockBlob;
+	ByteList mFqTableBlob;
+
+	std::string mTitle;
+	std::string mArtistName;
 	std::string mInstrumentSetName;
 	InstrumentSet mInsts;
 
-
+	void generateHeaderImage();
 	void releaseAllTracks();
 	TrackPtrList mTrackPtrList;
 };

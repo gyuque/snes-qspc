@@ -88,7 +88,7 @@ MMLTokenizeResult MMLTokenizer::tokenizeNext() {
 		const std::regex& re = it->referRegex();
 
 		std::cmatch m;
-		const bool found = std::regex_search(mpSourceBuffer + mReadPosition, m, re);
+		const bool found = std::regex_search(mpSourceBuffer + mReadPosition, m, re, std::regex_constants::match_continuous);
 		if (found && m.size() > 0) {
 			const std::string& foundStr = m.str(0);
 			if (0 != m.position(0)) {
@@ -119,6 +119,7 @@ MMLTokenizeResult MMLTokenizer::tokenizeNext() {
 
 bool MMLTokenizer::addTokenInstance(const std::string& rawStr, const MMLTokenTypeInfo& tokTypeInfo) {
 	MMLTokenStruct tk;
+	tk.is_macrodef = false;
 
 	tk.lineNo = mCurrentLineNum;
 	tk.colNo = mCurrentColNum;
@@ -136,7 +137,7 @@ bool MMLTokenizer::addTokenInstance(const std::string& rawStr, const MMLTokenTyp
 }
 
 void MMLTokenizer::putConvertedValue(MMLTokenStruct& tk) {
-	if (TT_INTEGER == tk.type) {
+	if (TT_INTEGER == tk.type || TT_NEG_INT == tk.type) {
 		tk.intVal = atoi( tk.rawStr.c_str() );
 	} else if (TT_DOTS == tk.type) {
 		tk.intVal = tk.rawStr.size(); // Count dots
@@ -173,7 +174,10 @@ void MMLTokenizer::updateColAndLine(const std::string& tokenStr) {
 	}
 }
 
-
+void MMLTokenizer::markAsMacroDefinition(unsigned int position) {
+	MMLTokenStruct& tok = mParsedTokenList.at(position);
+	tok.is_macrodef = true;
+}
 
 MMLTokenTypeInfo::MMLTokenTypeInfo(const char letter, const char* name, MMLTokenType type, const char* re_pattern) :
 	mLetter(letter), mType(type), mRe(re_pattern), mName(name)

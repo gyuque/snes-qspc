@@ -1,6 +1,7 @@
 #include "MMLCommand.h"
 #include "MMLErrors.h"
 #include "MMLUtility.h"
+#include "MusicDocument.h"
 
 MMLCommand::MMLCommand(const MMLExprStruct& sourceExpression) : mCodeBytes(0), mVerbose(false)
 {
@@ -54,7 +55,11 @@ void MMLCommand::processGrouping(const struct _ParamsContext& inContext, MMLComm
 }
 
 bool MMLCommand::beginSection(IndexStack& indexStack, int currentIndex) {
-	indexStack.push_back(currentIndex);
+	RepeatPointData r;
+	r.pos = currentIndex;
+	r.pExitCommand = nullptr;
+
+	indexStack.push_back(r);
 	return true;
 }
 
@@ -66,7 +71,7 @@ bool MMLCommand::closeSection(IndexStack& indexStack, ParamsContext& inoutContex
 	// スタックにリピート開始点が乗っていればポップ、なければエラー
 	if (indexStack.size() > 0) {
 		if (pBeginPosSave) {
-			*pBeginPosSave = indexStack.at(indexStack.size() - 1);
+			*pBeginPosSave = indexStack.at(indexStack.size() - 1).pos;
 		}
 
 		indexStack.pop_back();
@@ -81,9 +86,8 @@ void MMLCommand::applyContextDependentLength(NoteLength& outNL, const ParamsCont
 	// Length
 	if (0 == outNL.N) {
 		outNL.N = inContext.defaultLength.N;
+		outNL.dots += inContext.defaultLength.dots;
 	}
-
-	outNL.dots += inContext.defaultLength.dots;
 }
 
 bool MMLCommand::makeGroupedCommandList(MMLCommandPtrList& outList, const MMLCommandPtrList& sourceList, int beginCommandPosition, int endCommandPosition, bool verbose) {
@@ -142,53 +146,82 @@ void MMLCommand::pickSimpleInt(int& outVal, const MMLExprStruct& sourceExpressio
 	outVal = tokIntAt(sourceExpression, 1);
 }
 
+// ■ 整数のパラメータを伴うコマンドの共通ベースクラス
+MMLIntParamCommand::MMLIntParamCommand(const MMLExprStruct& sourceExpression, int defaultValue, const char* dumpName) : MMLCommand(sourceExpression) {
+	mDumpName = dumpName;
+	mSpecifiedValue = defaultValue;
+	pickFromExpr(sourceExpression);
+}
+
+MMLIntParamCommand::~MMLIntParamCommand() {
+
+}
+
+void MMLIntParamCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
+	pickSimpleInt(mSpecifiedValue, sourceExpression);
+}
+
+void MMLIntParamCommand::dump() {
+	fprintf(stderr, "(%s, %d)\n", mDumpName.c_str(), mSpecifiedValue);
+}
+
+
 /// factory -----------------------------------------------------------------------
 MMLCommand* createMMLCommandFromExpr(const MMLExprStruct& sourceExpression) {
+#define cmd_instance(klass) return new klass(sourceExpression); break;
+
 	switch (sourceExpression.exprType) {
 	case MX_TEMPO:
-		return new MMLTempoCommand(sourceExpression);
-		break;
+		cmd_instance(MMLTempoCommand);
+
+	case MX_INSTCHG:
+		cmd_instance(MMLInstChangeCommand);
+
+	case MX_NSHIFT:
+		cmd_instance(MMLNoteShiftCommand);
 
 	case MX_NOTE:
-		return new MMLNoteCommand(sourceExpression);
-		break;
+		cmd_instance(MMLNoteCommand);
 
 	case MX_ODEC:
 	case MX_OINC:
-		return new MMLOctaveShiftCommand(sourceExpression);
-		break;
+		cmd_instance(MMLOctaveShiftCommand);
 
 	case MX_LENSET:
-		return new MMLLengthSetCommand(sourceExpression);
-		break;
+		cmd_instance(MMLLengthSetCommand);
 
 	case MX_OCTSET:
-		return new MMLOctaveSetCommand(sourceExpression);
-		break;
+		cmd_instance(MMLOctaveSetCommand);
 
 	case MX_QSET:
-		return new MMLQuantizeSetCommand(sourceExpression);
-		break;
+		cmd_instance(MMLQuantizeSetCommand);
+
+	case MX_PANPOT:
+		cmd_instance(MMLPanCommand);
+
+	case MX_VELOSET:
+		cmd_instance(MMLVelocityChangeCommand);
 
 	case MX_LcREP_START:
-		return new MMLLocalRepeatBeginCommand(sourceExpression);
-		break;
+		cmd_instance(MMLLocalRepeatBeginCommand);
 
 	case MX_LcREP_END:
-		return new MMLLocalRepeatEndCommand(sourceExpression);
-		break;
+		cmd_instance(MMLLocalRepeatEndCommand);
+
+	case MX_SLASH:
+		cmd_instance(MMLSlashCommand);
 
 	case MX_CMB_START:
-		return new MMLTupletBeginCommand(sourceExpression);
-		break;
+		cmd_instance(MMLTupletBeginCommand);
 
 	case MX_CMB_END:
-		return new MMLTupletEndCommand(sourceExpression);
-		break;
+		cmd_instance(MMLTupletEndCommand);
 
 	case MX_TERM:
-		return new MMLTerminatorPseudoCommand(sourceExpression);
-		break;
+		cmd_instance(MMLTerminatorPseudoCommand);
+
+	case MX_MACRODEF:
+		cmd_instance(MMLMacroDefPseudoCommand);
 
 	default:
 		return NULL;
@@ -196,51 +229,119 @@ MMLCommand* createMMLCommandFromExpr(const MMLExprStruct& sourceExpression) {
 	}
 
 	return NULL;
+#undef cmd_instance
 }
 
 // ======= Set tempo t[n] =======
-MMLTempoCommand::MMLTempoCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression)
+MMLTempoCommand::MMLTempoCommand(const MMLExprStruct& sourceExpression) : MMLIntParamCommand(sourceExpression, 120, "Tempo")
 {
-	mSpecifiedValue = 120;
-	pickFromExpr(sourceExpression);
 }
 
 MMLTempoCommand::~MMLTempoCommand() {
 
 }
 
-void MMLTempoCommand::dump() {
-	fprintf(stderr, "(Tempo=%d)\n", mSpecifiedValue);
+void MMLTempoCommand::configureDocument(class MusicDocument* pDocument) {
+	pDocument->setTempo(mSpecifiedValue);
 }
 
-void MMLTempoCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
+// ======= Instrument change @[n] =======
+MMLInstChangeCommand::MMLInstChangeCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression) {
+	mSpecifiedValue = 0;
+	pickFromExpr(sourceExpression);
+	setCodeBytes(2);
+}
+
+MMLInstChangeCommand::~MMLInstChangeCommand() {
+
+}
+
+void MMLInstChangeCommand::dump() {
+	fprintf(stderr, "(@ %d)\n", mSpecifiedValue);
+}
+
+void MMLInstChangeCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
 	pickSimpleInt(mSpecifiedValue, sourceExpression);
 }
 
-// ======= Q command(gate time) q[n] =======
-MMLQuantizeSetCommand::MMLQuantizeSetCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression)
-{
-	mSpecifiedValue = MML_QMAX;
+// ◆◆◆ バイトコード生成 ◆◆◆
+// ::    @コマンド    ::
+// 第1バイト: E0h
+// 第2バイト: Inst index
+uint8_t MMLInstChangeCommand::getCode(int index) {
+	return (0 == index) ? 0xE0 : mSpecifiedValue;
+}
+
+// ======= ns command(Note Shift) ns[n] =======
+MMLNoteShiftCommand::MMLNoteShiftCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression) {
+	mSpecifiedValue = 0;
 	pickFromExpr(sourceExpression);
 }
 
-MMLQuantizeSetCommand::~MMLQuantizeSetCommand() {
+MMLNoteShiftCommand::~MMLNoteShiftCommand() {
 
 }
 
-void MMLQuantizeSetCommand::dump() {
-	fprintf(stderr, "(q %d)\n", mSpecifiedValue);
+void MMLNoteShiftCommand::dump() {
+	fprintf(stderr, "(ns %d)\n", mSpecifiedValue);
 }
 
-void MMLQuantizeSetCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
+void MMLNoteShiftCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
 	pickSimpleInt(mSpecifiedValue, sourceExpression);
+}
+
+void MMLNoteShiftCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
+	inoutContext.nShift = mSpecifiedValue;
+}
+
+// ============= @p command (panpot) =============
+MMLPanCommand::MMLPanCommand(const MMLExprStruct& sourceExpression) : MMLIntParamCommand(sourceExpression, PANPOT_MID, "Pan") {
+	setCodeBytes(2);
+}
+
+MMLPanCommand::~MMLPanCommand() {
+}
+
+// ◆◆◆ バイトコード生成 ◆◆◆
+// ::    @コマンド    ::
+// 第1バイト: E1h
+// 第2バイト: Position(0-8-16)
+uint8_t MMLPanCommand::getCode(int index) {
+	if (index == 0) {
+		return 0xE1;
+	} else {
+		if (mSpecifiedValue < 0) { return 0; }
+		if (mSpecifiedValue > PANPOT_MAX) { return PANPOT_MAX; }
+		return mSpecifiedValue;
+	}
+}
+
+// ======= v command(velocity change) v[n] =======
+MMLVelocityChangeCommand::MMLVelocityChangeCommand(const MMLExprStruct& sourceExpression) : MMLIntParamCommand(sourceExpression, MML_VMAX, "v") {
+	mSpecifiedValue = MML_VMAX;
+	pickFromExpr(sourceExpression);
+}
+
+MMLVelocityChangeCommand::~MMLVelocityChangeCommand() {
+
+}
+
+void MMLVelocityChangeCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
+	inoutContext.v = mSpecifiedValue;
+}
+
+
+// ======= Q command(gate time) q[n] =======
+MMLQuantizeSetCommand::MMLQuantizeSetCommand(const MMLExprStruct& sourceExpression) : MMLIntParamCommand(sourceExpression, MML_QMAX, "q")
+{
+}
+
+MMLQuantizeSetCommand::~MMLQuantizeSetCommand() {
 }
 
 void MMLQuantizeSetCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
 	inoutContext.q = mSpecifiedValue;
 }
-
-
 
 // ======= Default length set l[n] =======
 MMLLengthSetCommand::MMLLengthSetCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression)
@@ -265,22 +366,11 @@ void MMLLengthSetCommand::changeContext(ParamsContext& inoutContext, int current
 }
 
 // ======= Octave set o[n] =======
-MMLOctaveSetCommand::MMLOctaveSetCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression)
+MMLOctaveSetCommand::MMLOctaveSetCommand(const MMLExprStruct& sourceExpression) : MMLIntParamCommand(sourceExpression, 4, "Oct")
 {
-	mSpecifiedValue = 4;
-	pickFromExpr(sourceExpression);
 }
 
 MMLOctaveSetCommand::~MMLOctaveSetCommand() {
-
-}
-
-void MMLOctaveSetCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
-	pickSimpleInt(mSpecifiedValue, sourceExpression);
-}
-
-void MMLOctaveSetCommand::dump() {
-	fprintf(stderr, "(o %d)\n", mSpecifiedValue);
 }
 
 void MMLOctaveSetCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
@@ -313,6 +403,95 @@ void MMLOctaveShiftCommand::changeContext(ParamsContext& inoutContext, int curre
 	inoutContext.currentOctave += mDelta;
 }
 
+// ====== Global repeat or Repeat out ======
+MMLSlashCommand::MMLSlashCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression) {
+	mExitAddress = 0;
+	pickFromExpr(sourceExpression);
+	setCodeBytes(0);
+}
+
+MMLSlashCommand::~MMLSlashCommand() { }
+
+void MMLSlashCommand::setExitAddress(unsigned int a) {
+	mExitAddress = a;
+}
+
+void MMLSlashCommand::dump() {
+	fprintf(stderr, "/\n");
+}
+
+void MMLSlashCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {}
+
+void MMLSlashCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
+	// リピート区間の内か外かでコマンドの内容が変わる
+
+	const size_t nest = inoutContext.localRepeatPointStack.size();
+	if (nest > 0) {
+		// リピート区間の中=ループ抜け
+		inoutContext.localRepeatPointStack[nest - 1].pExitCommand = this;
+		setCodeBytes(3); // この場合は3バイトのコマンドを生成
+	} else {
+		// リピート区間外=曲全体リピートの開始点を指示
+		inoutContext.pGloalRepeatCmd = this;
+	}
+}
+
+// DEh に続きジャンプ先アドレス(Lo, Hi)
+uint8_t MMLSlashCommand::getCode(int index) {
+	if (index == 0) {
+		return 0xDE;
+	} else if (index == 1) {
+		return (mExitAddress & 0x00FF);
+	}
+
+	return ((mExitAddress >> 8) & 0x00FF);
+}
+
+
+// 曲全体のループを指示するために付加するコマンド（自動生成専用、MMLには現れない）
+MMLFooterCommand::MMLFooterCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression) {
+	mpJumpTargetCmd = nullptr;
+	pickFromExpr(sourceExpression);
+	setCodeBytes(0); // <-- 初期状態ではコードを生成しない
+}
+
+MMLFooterCommand::~MMLFooterCommand() {
+
+}
+
+void MMLFooterCommand::dump() {
+	fprintf(stderr, "//\n");
+}
+
+void MMLFooterCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {}
+
+void MMLFooterCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
+	if (inoutContext.pGloalRepeatCmd) {
+		setCodeBytes(3);
+
+		mpJumpTargetCmd = inoutContext.pGloalRepeatCmd;
+		inoutContext.pGloalRepeatCmd = nullptr; // 次のトラックに移る前に無効化しておく
+	}
+
+	inoutContext.track += 1;
+}
+
+// DDh に続きジャンプ先アドレス(Lo, Hi)
+uint8_t MMLFooterCommand::getCode(int index) {
+	unsigned int jumpAddress = 0;
+	if (mpJumpTargetCmd) {
+		jumpAddress = mpJumpTargetCmd->getByteCodePosition();
+	}
+
+	if (index == 0) {
+		return 0xDD;
+	} else if (index == 1) {
+		return (jumpAddress & 0x00FF);
+	}
+
+	return ((jumpAddress >> 8) & 0x00FF);
+}
+
 // ======= Local repeat start and end =======
 // 部分リピート /:n～:/
 
@@ -321,6 +500,7 @@ MMLLocalRepeatBeginCommand::MMLLocalRepeatBeginCommand(const MMLExprStruct& sour
 {
 	mNumToPlay = 2;
 	pickFromExpr(sourceExpression);
+	setCodeBytes(2);
 }
 
 MMLLocalRepeatBeginCommand::~MMLLocalRepeatBeginCommand() {
@@ -331,7 +511,9 @@ void MMLLocalRepeatBeginCommand::dump() {
 }
 
 void MMLLocalRepeatBeginCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
-	pickSimpleInt(mNumToPlay, sourceExpression);
+	if (sourceExpression.tokenList.size() > 1) {
+		pickSimpleInt(mNumToPlay, sourceExpression);
+	}
 }
 
 void MMLLocalRepeatBeginCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
@@ -343,9 +525,20 @@ void MMLLocalRepeatBeginCommand::changeContext(ParamsContext& inoutContext, int 
 	beginSection(inoutContext.localRepeatPointStack, currentCommandIndex);
 }
 
+// リピートコマンド(始点): DFh に続き折り返し回数（演奏回数-1）
+
+uint8_t MMLLocalRepeatBeginCommand::getCode(int index) {
+	if (index == 0) {
+		return 0xDF;
+	}
+
+	return mNumToPlay - 1;
+}
+
 // end
 MMLLocalRepeatEndCommand::MMLLocalRepeatEndCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression)
 {
+	mpInnerSlashCommand = nullptr;
 	mBeginCommandPosition = -1;
 	pickFromExpr(sourceExpression);
 	setCodeBytes(3);
@@ -363,6 +556,13 @@ void MMLLocalRepeatEndCommand::pickFromExpr(const MMLExprStruct& sourceExpressio
 }
 
 void MMLLocalRepeatEndCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
+	// ループ抜けポイント '/' がある場合は対応するコマンドを保存しておく
+	const size_t n = inoutContext.localRepeatPointStack.size();
+	if (n > 0) {
+		mpInnerSlashCommand = inoutContext.localRepeatPointStack[n - 1].pExitCommand;
+	}
+
+
 	closeSection(inoutContext.localRepeatPointStack, inoutContext, &mBeginCommandPosition);
 }
 
@@ -370,7 +570,16 @@ void MMLLocalRepeatEndCommand::processGrouping(const struct _ParamsContext& inCo
 	makeGroupedCommandList(mInnerList, commandPtrList, mBeginCommandPosition, currentCommandIndex, mVerbose);
 }
 
-// リピートコマンド: EFh に続き戻り位置を Lo, Hi の順
+void MMLLocalRepeatEndCommand::setByteCodePosition(int pos) {
+	MMLCommand::setByteCodePosition(pos);
+
+	if (mpInnerSlashCommand) {
+		// 自身の次の位置を設定
+		mpInnerSlashCommand->setExitAddress( pos + countCodeBytes() );
+	}
+}
+
+// リピートコマンド(終点): EFh に続き戻り位置を Lo, Hi の順
 
 uint8_t MMLLocalRepeatEndCommand::getCode(int index) {
 	int bpos = 0;
@@ -473,6 +682,22 @@ void MMLTupletEndCommand::processGrouping(const struct _ParamsContext& inContext
 	}
 }
 
+// ======= Macro definition pseudo command =======
+
+MMLMacroDefPseudoCommand::MMLMacroDefPseudoCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression)
+{
+}
+
+MMLMacroDefPseudoCommand::~MMLMacroDefPseudoCommand() {
+
+}
+
+void MMLMacroDefPseudoCommand::dump() {
+	fprintf(stderr, "(macro def)\n");
+}
+
+void MMLMacroDefPseudoCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {}
+
 // ======= Terminator pseudo command =======
 // トラック終端（セミコロン）に対応する疑似コマンド
 
@@ -485,7 +710,6 @@ MMLTerminatorPseudoCommand::~MMLTerminatorPseudoCommand() {
 }
 
 void MMLTerminatorPseudoCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
-	inoutContext.track += 1;
 }
 
 void MMLTerminatorPseudoCommand::dump() {

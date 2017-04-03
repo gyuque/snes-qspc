@@ -8,45 +8,27 @@ void parseCommandOptions(CommandOptionList& outList, int argc, _TCHAR* argv[]) {
 		return;
 	}
 
-	bool prev_ot = false; // 1つ前の引数が種類指定(ハイフンで始まる)か
-	std::string prevArg;
-
 	const int nOptions = argc - 1;
 	for (int i = 0; i < nOptions; ++i) {
 		std::string raw = argv[i+1];
 		if (raw.at(0) == '-') {
-			addSwitchOnly(prev_ot, outList, prevArg);
-			prev_ot = true;
+			CommandOptionEntry oe;
+			oe.typeString = raw.substr(1);
+			oe.content = raw;
+			oe.multiContent.push_back(raw);
+
+			outList.push_back(oe);
 		} else {
+			// 種類指定を伴わなければ入力ファイル(-i)として処理
+			CommandOptionEntry oe;
+			oe.typeString = "i";
+			oe.content = raw;
+			oe.multiContent.push_back(raw);
 
-			if (prev_ot) {
-				// 1つ前が種類指定、この引数は値
-				CommandOptionEntry oe;
-				oe.typeString = prevArg.substr(1);
-				oe.content = raw;
-				oe.multiContent.push_back(raw);
-
-				outList.push_back(oe);
-			}
-
-			prev_ot = false;
+			outList.push_back(oe);
 		}
-
-		prevArg = raw;
 	}
 
-	addSwitchOnly(prev_ot, outList, prevArg);
-}
-
-void addSwitchOnly(bool& inoutPrevFlag, CommandOptionList& outList, const std::string& prevStr) {
-	if (inoutPrevFlag) {
-		// スイッチ単体が残っていれば追加
-		CommandOptionEntry oe;
-		oe.typeString = prevStr.substr(1);
-		outList.push_back(oe);
-
-		inoutPrevFlag = false;
-	}
 }
 
 void makeCommandOptionsSummary(CommandOptionsSummary& outSummary, const CommandOptionList& inList) {

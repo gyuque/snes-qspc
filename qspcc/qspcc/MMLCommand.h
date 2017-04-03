@@ -20,7 +20,8 @@ class MMLCommand* createMMLCommandFromExpr(const MMLExprStruct& sourceExpression
 typedef std::vector<class MMLCommand*> MMLCommandPtrList;
 
 // コマンドインデックス用スタック
-typedef std::vector<int> IndexStack;
+typedef struct _RepeatPointData { int pos; class MMLSlashCommand* pExitCommand; } RepeatPointData;
+typedef std::vector<RepeatPointData> IndexStack;
 
 
 // ■ MMLCommand: 抽象クラスで実際のコマンドには割り当てない
@@ -32,11 +33,12 @@ public:
 	void assignTrack(int t);
 	int getAssignedTrack() const { return mAssignedTrack; }
 
-	void setByteCodePosition(int pos);
+	virtual void setByteCodePosition(int pos);
 	int getByteCodePosition() const { return mByteCodePosition; }
 
 	virtual int countCodeBytes() const { return mCodeBytes;  }
 	virtual void rewriteTicks(DriverTick t) {}
+	virtual void configureDocument(class MusicDocument* pDocument) {}
 
 	void raiseError(const char* relStr, int messageId);
 	void setErrorReceiver(IMMLError* er) {
@@ -69,49 +71,76 @@ protected:
 	void setCodeBytes(int i) { mCodeBytes = i; }
 };
 
+// ■ 整数のパラメータを伴うコマンドの共通ベースクラス
+class MMLIntParamCommand : public MMLCommand
+{
+public:
+	MMLIntParamCommand(const MMLExprStruct& sourceExpression, int defaultValue, const char* dumpName);
+	virtual ~MMLIntParamCommand();
+	virtual void dump();
+protected:
+	virtual void pickFromExpr(const MMLExprStruct& sourceExpression);
+	int mSpecifiedValue;
+	std::string mDumpName;
+};
 
 // ■ ParamsContext: コンパイル時にコンテキスト依存のパラメータを格納する
 // 例えばノートに音長が指定されていない場合は、コンテキストに設定されたデフォルト音長が適用される
 typedef struct _ParamsContext {
 	NoteLength defaultLength;
 	int currentOctave;
-	int q;
+	int q, v;
 	int track;
+	int nShift;
 	IndexStack localRepeatPointStack;
 	IndexStack tupletPointStack;
 	bool groupingNeeded;
+
+	class MMLSlashCommand* pGloalRepeatCmd;
 
 	_ParamsContext() {
 		// 初期値: 付点無し4分音符、オクターブ3、ゲートタイム最大
 		defaultLength.N    = 4;
 		defaultLength.dots = 0;
 		currentOctave = 3;
+		nShift = 0;
 		track = 0;
 		groupingNeeded = false;
 		q = MML_QMAX;
+		v = MML_VMAX;
+
+		pGloalRepeatCmd = nullptr;
 	}
 } ParamsContext;
 
 // ■ ここからのサブクラスを実際のコマンドに割り当て
 
 // ======= Set tempo t[n] =======
-class MMLTempoCommand : public MMLCommand {
+class MMLTempoCommand : public MMLIntParamCommand {
 public:
 	MMLTempoCommand(const MMLExprStruct& sourceExpression);
 	virtual ~MMLTempoCommand();
+	virtual void configureDocument(class MusicDocument* pDocument);
+};
+
+// ======= Instrument change @[n] =======
+class MMLInstChangeCommand : public MMLCommand {
+public:
+	MMLInstChangeCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLInstChangeCommand();
 
 	MC_PUBLIC_DECL
+	MC_GETCODE_DECL
 protected:
 	int mSpecifiedValue;
-
 	MC_PROTECTED_DECL
 };
 
-// ======= Q command(gate time) q[n] =======
-class MMLQuantizeSetCommand : public MMLCommand {
+// ======= ns command(Note Shift) ns[n] =======
+class MMLNoteShiftCommand : public MMLCommand {
 public:
-	MMLQuantizeSetCommand(const MMLExprStruct& sourceExpression);
-	virtual ~MMLQuantizeSetCommand();
+	MMLNoteShiftCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLNoteShiftCommand();
 
 	MC_PUBLIC_DECL
 	MC_CTXCHG_DECL
@@ -119,6 +148,30 @@ protected:
 	int mSpecifiedValue;
 
 	MC_PROTECTED_DECL
+};
+
+// ============= @p command (panpot) =============
+class MMLPanCommand : public MMLIntParamCommand {
+public:
+	MMLPanCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLPanCommand();
+	MC_GETCODE_DECL
+};
+
+// ======= v command(velocity change) v[n] =======
+class MMLVelocityChangeCommand : public MMLIntParamCommand {
+public:
+	MMLVelocityChangeCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLVelocityChangeCommand();
+	MC_CTXCHG_DECL
+};
+
+// ======= Q command(gate time) q[n] =======
+class MMLQuantizeSetCommand : public MMLIntParamCommand {
+public:
+	MMLQuantizeSetCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLQuantizeSetCommand();
+	MC_CTXCHG_DECL
 };
 
 // ======= Note [a-g] =======
@@ -131,9 +184,12 @@ public:
 	MC_CTXAPL_DECL
 	MC_GETCODE_DECL
 	MC_REWRITETICKS_IMPL
+
+	static bool findTieToken(const MMLExprStruct& expr);
 protected:
 	int calcNoteBytes();
 
+	bool mTie;
 	int mRelPI; //相対（オクターブ内）音名インデックス
 	int mAbsPI; //絶対（オクターブ含む）音名インデックス
 
@@ -161,17 +217,11 @@ protected:
 };
 
 // ======= Octave set o[n] =======
-class MMLOctaveSetCommand : public MMLCommand {
+class MMLOctaveSetCommand : public MMLIntParamCommand {
 public:
 	MMLOctaveSetCommand(const MMLExprStruct& sourceExpression);
 	virtual ~MMLOctaveSetCommand();
-
-	MC_PUBLIC_DECL
 	MC_CTXCHG_DECL
-protected:
-	int mSpecifiedValue;
-
-	MC_PROTECTED_DECL
 };
 
 // ======= Octave shift < > =======
@@ -188,6 +238,38 @@ protected:
 	MC_PROTECTED_DECL
 };
 
+// ====== Global repeat or Repeat out ======
+// 全体リピート または リピート抜けポイント
+class MMLSlashCommand : public MMLCommand {
+public:
+	MMLSlashCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLSlashCommand();
+
+	void setExitAddress(unsigned int a);
+
+	MC_PUBLIC_DECL
+	MC_CTXCHG_DECL
+	MC_GETCODE_DECL
+protected:
+	MC_PROTECTED_DECL
+
+	unsigned int mExitAddress;
+};
+
+// 曲全体のループを指示するために付加するコマンド（自動生成専用、MMLには現れない）
+class MMLFooterCommand : public MMLCommand {
+public:
+	MMLFooterCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLFooterCommand();
+
+	MC_PUBLIC_DECL
+	MC_CTXCHG_DECL
+	MC_GETCODE_DECL
+protected:
+	MC_PROTECTED_DECL
+
+	MMLCommand* mpJumpTargetCmd;
+};
 
 // ======= Local repeat start and end =======
 // 部分リピート /:n～:/
@@ -199,6 +281,7 @@ public:
 
 	MC_PUBLIC_DECL
 	MC_CTXCHG_DECL
+	MC_GETCODE_DECL
 protected:
 	int mNumToPlay;
 
@@ -209,12 +292,14 @@ class MMLLocalRepeatEndCommand : public MMLCommand {
 public:
 	MMLLocalRepeatEndCommand(const MMLExprStruct& sourceExpression);
 	virtual ~MMLLocalRepeatEndCommand();
+	virtual void setByteCodePosition(int pos);
 
 	MC_PUBLIC_DECL
 	MC_CTXCHG_DECL
 	MC_GETCODE_DECL
 	MC_GROUPING_DECL
 protected:
+	MMLSlashCommand* mpInnerSlashCommand;
 	MMLCommandPtrList mInnerList;
 	int mBeginCommandPosition;
 
@@ -250,6 +335,18 @@ protected:
 	int mBeginCommandPosition;
 	MMLCommandPtrList mInnerList;
 
+	MC_PROTECTED_DECL
+};
+
+// ======= Macro definition pseudo command =======
+// マクロ宣言に対応する疑似コマンド
+
+class MMLMacroDefPseudoCommand : public MMLCommand {
+public:
+	MMLMacroDefPseudoCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLMacroDefPseudoCommand();
+	MC_PUBLIC_DECL
+protected:
 	MC_PROTECTED_DECL
 };
 
