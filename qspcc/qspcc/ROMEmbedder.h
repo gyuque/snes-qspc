@@ -50,6 +50,8 @@ public:
 	void setConfig(const EmbedderConfig* pConfig);
 	void loadTemplate(const std::string& filename, const std::string& mapFilename);
 
+	void clearMetadataArea(size_t nTracks);
+	void writeMetadataHeader(bool quickLoad);
 	void writeMetadata(unsigned int index, const std::string& title, const std::string& authorName);
 	void writeString(unsigned int startAddress, const std::string& strData, size_t validMaxLength, size_t bufferLength);
 

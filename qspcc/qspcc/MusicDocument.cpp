@@ -76,6 +76,10 @@ bool MusicDocument::isInstrumentSetNameSet() const {
 	return mInstrumentSetName.size() > 0;
 }
 
+const std::string& MusicDocument::getInstrumentSetName() const {
+	return mInstrumentSetName;
+}
+
 void MusicDocument::calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo) {
 	int max_size = 0;
 	const size_t nTracks = mTrackPtrList.size();

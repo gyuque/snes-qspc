@@ -43,8 +43,8 @@ bool InstrumentSet::load(const char* manifestPath, const char* baseDir) {
 	buildSrcTable();
 	writeInstSrcNumbers();
 
-//	dumpSrcTable();
-//	dumpInstTable();
+	dumpSrcTable();
+	dumpInstTable();
 //	dumpPackedBRR();
 	return true;
 }
@@ -204,7 +204,16 @@ void InstrumentSet::buildSrcTable() {
 		if (!existingSrc) {
 			int a_ofs = mBRRPacker.getAttackOffsetByName(def.filename);
 			int l_ofs = mBRRPacker.getLoopOffsetByName(def.filename, true);
-			if (a_ofs >= 0 && l_ofs >= 0) {
+			fprintf(stderr, " <<<<< %d  %d \n", a_ofs, l_ofs);
+			if (a_ofs < 0 && l_ofs >= 0) {
+				// loop only
+				WavSrc src;
+				src.brrName = def.filename;
+				src.attackOffset = l_ofs;
+				src.loopOffset = l_ofs;
+
+				mSrcList.push_back(src);
+			} else if (a_ofs >= 0 && l_ofs >= 0) {
 				WavSrc src;
 				src.brrName = def.filename;
 				src.attackOffset = a_ofs;

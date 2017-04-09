@@ -33,6 +33,7 @@ void parseCommandOptions(CommandOptionList& outList, int argc, _TCHAR* argv[]) {
 
 void makeCommandOptionsSummary(CommandOptionsSummary& outSummary, const CommandOptionList& inList) {
 	outSummary.verboseLevel = 0;
+	outSummary.quickLoadEnabled = false;
 
 	const size_t n = inList.size();
 	for (size_t i = 0; i < n; ++i) {
@@ -46,6 +47,8 @@ void makeCommandOptionsSummary(CommandOptionsSummary& outSummary, const CommandO
 			outSummary.verboseLevel = 1;
 		} else if (0 == tp.compare("V")) {
 			outSummary.verboseLevel = 2;
+		} else if (0 == tp.compare("q")) {
+			outSummary.quickLoadEnabled = true;
 		}
 	}
 }

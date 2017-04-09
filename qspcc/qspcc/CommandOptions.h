@@ -21,6 +21,7 @@ typedef std::vector<CommandOptionEntry> CommandOptionList;
 typedef struct _CommandOptionsSummary {
 	StringArgList inputFileList;
 	int verboseLevel;
+	bool quickLoadEnabled;
 } CommandOptionsSummary;
 
 

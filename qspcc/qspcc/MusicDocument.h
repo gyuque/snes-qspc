@@ -24,6 +24,7 @@ public:
 
 	const std::string& getTitle() const { return mTitle; }
 	const std::string& getArtistName() const { return mArtistName; }
+	const std::string& getInstrumentSetName() const;
 
 	bool isInstrumentSetNameSet() const;
 	bool loadInstrumentSet();

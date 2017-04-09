@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "ROMEmbedder.h"
 
+#define kSoundMetaHeaderSize (16)
 #define kSoundMetaBlockSize (32)
 #define kMaxTitleLength (31)
 
@@ -40,15 +41,34 @@ void ROMEmbedder::setBaseDir(const std::string& baseDir) {
 	mBaseDir = baseDir;
 }
 
-void ROMEmbedder::writeMetadata(unsigned int index, const std::string& title, const std::string& authorName) {
+void ROMEmbedder::writeMetadataHeader(bool quickLoad) {
 	RomSectionEntry* sec = mRomMap.findSoundMetadataSection();
+	assert(!!(sec) && !!(mpSourceBin));
 	if (!sec) { return; }
 
-	const int base_ofs = kSoundMetaBlockSize * 2 * index;
+	mpSourceBin->writeByte(sec->offset, quickLoad ? 1 : 0);
+}
+
+void ROMEmbedder::clearMetadataArea(size_t nTracks) {
+	const size_t stride = kSoundMetaBlockSize * 2;
+	RomSectionEntry* sec = mRomMap.findSoundMetadataSection();
+	const size_t len = stride * nTracks;
+	
+	for (size_t i = 0; i < len; ++i) {
+		mpSourceBin->writeByte(sec->offset + i, 0);
+	}
+}
+
+void ROMEmbedder::writeMetadata(unsigned int index, const std::string& title, const std::string& authorName) {
+	RomSectionEntry* sec = mRomMap.findSoundMetadataSection();
+	assert(!!(sec));
+	if (!sec) { return; }
+
+	const int base_ofs = kSoundMetaHeaderSize + kSoundMetaBlockSize * 2 * index;
 	const int author_ofs = base_ofs + kSoundMetaBlockSize;
 
-	writeString(base_ofs, title, kMaxTitleLength, kSoundMetaBlockSize);
-	writeString(author_ofs, authorName, kMaxTitleLength, kSoundMetaBlockSize);
+	writeString(sec->offset + base_ofs, title, kMaxTitleLength, kSoundMetaBlockSize);
+	writeString(sec->offset + author_ofs, authorName, kMaxTitleLength, kSoundMetaBlockSize);
 }
 
 bool ROMEmbedder::writeSoundDriverImage(unsigned int index, const BinFile* pBin) {
@@ -69,10 +89,12 @@ void ROMEmbedder::writeString(unsigned int startAddress, const std::string& strD
 	fprintf(stderr, "%X <- %s\n", startAddress, strData.c_str());
 
 	size_t i;
-	const size_t n = strData.size();
+	const size_t n = std::min<size_t>(strData.size(), validMaxLength);
 
-	for (i = 0; i < n; ++i) {
-
+	for (i = 0; i < bufferLength; ++i) {
+		mpSourceBin->writeByte(startAddress + i, 
+			                   (i < n) ? strData.at(i) : 0
+		);
 	}
 }
 

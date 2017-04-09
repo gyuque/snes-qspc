@@ -16,7 +16,7 @@ static GlobalConfig sGlobalConfig;
 static bool globalSetup(Embedder& embd);
 static void showUsage();
 static void releaseAllCompilers(PCompilerList& inoutCompilerList);
-
+static bool checkSingleInstruments(PCompilerList& inCompilerList);
 static bool addCompiler(PCompilerList& outCompilerList, const std::string inputFile, const CommandOptionsSummary& opt_summary, const EmbedderConfig& embd_config);
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -51,6 +51,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		fprintf(stderr, "Verbose mode enabled. (Level=%d)\n", opt_summary.verboseLevel);
 	}
 
+	bool embed_ready = true;
 	size_t i;
 	// ==== 各MMLファイルをコンパイル ====
 	const StringArgList& infileList = opt_summary.inputFileList;
@@ -64,40 +65,53 @@ int _tmain(int argc, _TCHAR* argv[])
 	compiler.compile( opt_summary.inputFileList[0].c_str() );
 	*/
 
-	if (opt_summary.verboseLevel > 0) {
-		fprintf(stderr, "Embedding sequence data...\n");
-		embd.dumpConfig();
+
+	if (opt_summary.quickLoadEnabled) {
+		if (!(checkSingleInstruments(sCompilerList))) {
+			fprintf(stderr, "FATAL: Tracks must share instrument set in quick load mode.\n");
+			embed_ready = false;
+		} else {
+			fprintf(stderr, "Quick load enabled.\n");
+		}
 	}
 
-	// ==== コンパイル済みデータを埋め込み ====
-	ROMEmbedder r_embd;
-	r_embd.setConfig(&embd.referConfig());
-	r_embd.setBaseDir(getSelfDir());
-	r_embd.loadTemplate(sGlobalConfig.getRomImageFileName(), sGlobalConfig.getRomMapFileName());
+	if (embed_ready) {
+		if (opt_summary.verboseLevel > 0) {
+			fprintf(stderr, "Embedding sequence data...\n");
+			embd.dumpConfig();
+		}
 
-	const size_t nCompiledFiles = sCompilerList.size();
-	for (i = 0; i < nCompiledFiles; ++i) {
-		MMLCompiler* pCompiler = sCompilerList[i];
-		MusicDocument* pDoc = pCompiler->referLastDocument();
+		// ==== コンパイル済みデータを埋め込み ====
+		ROMEmbedder r_embd;
+		r_embd.setConfig(&embd.referConfig());
+		r_embd.setBaseDir(getSelfDir());
+		r_embd.loadTemplate(sGlobalConfig.getRomImageFileName(), sGlobalConfig.getRomMapFileName());
+		r_embd.clearMetadataArea(sGlobalConfig.getMaxSongTracks());
+		r_embd.writeMetadataHeader(opt_summary.quickLoadEnabled);
 
-		// ドライバイメージに書き込み
-		embd.embed(
-			pDoc->referMusicHeaderSource(),
-			pDoc->referFqTableBytesSource(),
-			pDoc->referSequenceBytesSource(),
-			pDoc->referInstDirBytesSource(),
-			pDoc->referBRRDirBytesSource(),
-			pDoc->referBRRBodyBytesSource()
-			);
+		const size_t nCompiledFiles = sCompilerList.size();
+		for (i = 0; i < nCompiledFiles; ++i) {
+			MMLCompiler* pCompiler = sCompilerList[i];
+			MusicDocument* pDoc = pCompiler->referLastDocument();
 
-		const BinFile* driverBin = embd.referBin();
-		r_embd.writeMetadata(i, pDoc->getTitle(), pDoc->getArtistName());
-		r_embd.writeSoundDriverImage(i, driverBin);
+			// ドライバイメージに書き込み
+			embd.embed(
+				pDoc->referMusicHeaderSource(),
+				pDoc->referFqTableBytesSource(),
+				pDoc->referSequenceBytesSource(),
+				pDoc->referInstDirBytesSource(),
+				pDoc->referBRRDirBytesSource(),
+				pDoc->referBRRBodyBytesSource()
+				);
+
+			const BinFile* driverBin = embd.referBin();
+			r_embd.writeMetadata(i, pDoc->getTitle(), pDoc->getArtistName());
+			r_embd.writeSoundDriverImage(i, driverBin);
+		}
+
+		embd.exportToFile("drvimg-lo.bin", "drvimg-hi.bin");
+		r_embd.exportToFile("output-test.smc");
 	}
-
-	embd.exportToFile("drvimg-lo.bin", "drvimg-hi.bin");
-
-
 
 	releaseAllCompilers(sCompilerList);
 	return 0;
@@ -134,6 +148,26 @@ void releaseAllCompilers(PCompilerList& inoutCompilerList) {
 	}
 
 	inoutCompilerList.clear();
+}
+
+bool checkSingleInstruments(PCompilerList& inCompilerList) {
+	bool same = true;
+	std::string firstName;
+
+	const size_t n = inCompilerList.size();
+	for (size_t i = 0; i < n; ++i) {
+		MMLCompiler* compiler = inCompilerList[i];
+
+		if (0 == i) {
+			firstName = compiler->referLastDocument()->getInstrumentSetName();
+		} else {
+			if (0 != compiler->referLastDocument()->getInstrumentSetName().compare(firstName)) {
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 bool globalSetup(Embedder& embd) {

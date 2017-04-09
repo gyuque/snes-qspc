@@ -28,7 +28,7 @@ public:
 		return mRomMapFileName;
 	}
 
-	size_t getMaxTracks() const {
+	size_t getMaxSongTracks() const {
 		return mMaxTracks;
 	}
 
