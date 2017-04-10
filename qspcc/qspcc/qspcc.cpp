@@ -8,6 +8,7 @@
 #include "CommandOptions.h"
 #include "tester/testers.h"
 #include "win32/pwd.h"
+#include "MMLErrors.h"
 
 typedef std::vector<MMLCompiler*> PCompilerList;
 
@@ -51,13 +52,16 @@ int _tmain(int argc, _TCHAR* argv[])
 		fprintf(stderr, "Verbose mode enabled. (Level=%d)\n", opt_summary.verboseLevel);
 	}
 
+	bool any_failed = false;
 	bool embed_ready = true;
 	size_t i;
 	// ==== 各MMLファイルをコンパイル ====
 	const StringArgList& infileList = opt_summary.inputFileList;
 	const size_t nFiles = infileList.size();
 	for (i = 0; i < nFiles; ++i) {
-		addCompiler(sCompilerList, infileList[i], opt_summary, embd.referConfig());
+		if (!addCompiler(sCompilerList, infileList[i], opt_summary, embd.referConfig())) {
+			any_failed = true;
+		}
 	}
 	/**
 	MMLCompiler compiler;
@@ -65,13 +69,16 @@ int _tmain(int argc, _TCHAR* argv[])
 	compiler.compile( opt_summary.inputFileList[0].c_str() );
 	*/
 
-
-	if (opt_summary.quickLoadEnabled) {
-		if (!(checkSingleInstruments(sCompilerList))) {
-			fprintf(stderr, "FATAL: Tracks must share instrument set in quick load mode.\n");
-			embed_ready = false;
-		} else {
-			fprintf(stderr, "Quick load enabled.\n");
+	if (any_failed) {
+		embed_ready = false;
+	} else {
+		if (opt_summary.quickLoadEnabled) {
+			if (!(checkSingleInstruments(sCompilerList))) {
+				fprintf(stderr, "FATAL: Tracks must share instrument set in quick load mode.\n");
+				embed_ready = false;
+			} else {
+				fprintf(stderr, "Quick load enabled.\n");
+			}
 		}
 	}
 
@@ -190,7 +197,10 @@ bool globalSetup(Embedder& embd) {
 
 void showUsage() {
 	fprintf(stderr, "qSPC version 1.9.0\n");
-	fprintf(stderr, "--------------------------------------------------------\n");
+	if (MMLErrors::getCurrentLanguage() == MSGLNG_JAPANESE) {
+		fprintf(stderr, "この環境ではエラーメッセージが日本語で表示されます.\n");
+	}
+	fprintf(stderr, "------------------------------------------------------------------------\n");
 	fprintf(stderr, "Usage:\n");
 	fprintf(stderr, "  qspc [options] -i <input mml 1> -i <input mml 2> -i <input mml 3>...\n");
 	fprintf(stderr, "    or simply\n");

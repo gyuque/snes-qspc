@@ -27,7 +27,7 @@ public:
 	const std::string& getInstrumentSetName() const;
 
 	bool isInstrumentSetNameSet() const;
-	bool loadInstrumentSet();
+	InstLoadResult loadInstrumentSet();
 	void generateInstrumentDataBinaries(unsigned int baseAddress);
 
 	class MusicTrack* appendTrack();

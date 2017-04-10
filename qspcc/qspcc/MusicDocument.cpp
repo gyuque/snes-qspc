@@ -150,26 +150,29 @@ void MusicDocument::dumpSequenceBlob() {
 	dumpHex(mGeneratedSequenceBlob);
 }
 
-bool MusicDocument::loadInstrumentSet() {
-	if (!isInstrumentSetNameSet()) { return false; }
+InstLoadResult MusicDocument::loadInstrumentSet() {
+	if (!isInstrumentSetNameSet()) { return INSTLD_NOT_SET; }
 
 	const char* inst_dirname = mInstrumentSetName.c_str();
 	if (!isValidDirectory(inst_dirname)) {
 		fprintf(stderr, "'%s' not found\n", inst_dirname);
-		return false;
+		return INSTLD_DIR_NOTFOUND;
 	}
 
 	std::string manifestPath = mInstrumentSetName + "/manifest.json";
 	if (!checkFileExists(manifestPath.c_str())) {
 		fprintf(stderr, "'%s' not found\n", manifestPath.c_str() );
-		return false;
+		return INSTLD_MANIFEST_NOTFOUND;
 	}
 
 	fprintf(stderr, "Loading instrument set: %s\n", manifestPath.c_str());
-	mInsts.load( manifestPath.c_str(), inst_dirname );
+	const InstLoadResult rv = mInsts.load(manifestPath.c_str(), inst_dirname);
+	if (rv != INSTLD_OK) {
+		return rv;
+	}
 
 	generateFqRegTableFromInsts();
-	return true;
+	return INSTLD_OK;
 }
 
 void MusicDocument::generateInstrumentDataBinaries(unsigned int baseAddress) {

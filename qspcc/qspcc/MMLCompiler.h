@@ -36,10 +36,12 @@ protected:
 	void generateATrack(int trackIndex, MusicTrack* pTrack);
 
 	void dumpAllCommands();
+	void checkGlobalErrors(InstLoadResult instLdResult);
 	virtual void raiseError(int lineno, int charno, const char* relStr, const std::string& message);
 
 	int mVerboseLevel;
 
+	std::string mCurrentFilename;
 	MusicDocument* mpLastDocument;
 	MMLTokenizer mTokenizer;
 	MMLExpressionBuilder* mpExprBuilder;

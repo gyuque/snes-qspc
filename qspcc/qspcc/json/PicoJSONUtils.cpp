@@ -11,6 +11,12 @@ picojson::object jsonObjectFromFile(const char* filename) {
     
     picojson::value j;
     inf >> j;
+
+	if (inf.fail()) {
+		std::cerr << "[picojson] " << picojson::get_last_error() << std::endl;
+		picojson::object o;
+		return o;
+	}
     
     return j.get<picojson::object>();
 }

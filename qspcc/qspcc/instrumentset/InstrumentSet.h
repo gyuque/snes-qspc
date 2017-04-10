@@ -37,7 +37,7 @@ public:
 	InstrumentSet();
 	virtual ~InstrumentSet();
 
-	bool load(const char* manifestPath, const char* baseDir);
+	InstLoadResult load(const char* manifestPath, const char* baseDir);
 
 	C700BRR* findBRR(const std::string& name) const;
 	static void setDefaultADSR(InstADSR& outADSR);

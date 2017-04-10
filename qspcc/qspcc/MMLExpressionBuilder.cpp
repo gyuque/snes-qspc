@@ -173,6 +173,8 @@ void MMLExpressionBuilder::expandMacrosInTokenList(MMLTokenList& outList, const 
 			if (found) {
 				const MacroDefinition& mdef = macroDic.referMacroDefinition(tok.rawStr);
 				expandMacrosInTokenList(outList, mdef.tokenList, macroDic, nestLevel + 1);
+			} else {
+				raiseExpressionErrorWithToken(tok, MMLErrors::E_NOTFOUND_MACRO);
 			}
 
 		} else {
@@ -185,10 +187,14 @@ void MMLExpressionBuilder::expandMacrosInTokenList(MMLTokenList& outList, const 
 
 
 void MMLExpressionBuilder::raiseExpressionError(int tokenPos) {
-	if (mpSourceTokenizer && mpErrorRecv) {
-		const MMLTokenStruct& tok = mExpandedTokenList.at(tokenPos);
+	const MMLTokenStruct& tok = mExpandedTokenList.at(tokenPos);
+	raiseExpressionErrorWithToken(tok);
+}
 
-		mpErrorRecv->raiseError(tok.lineNo, tok.colNo, tok.rawStr.c_str(), MMLErrors::getErrorString( MMLErrors::E_UNKNOWN_EXPR ));
+void MMLExpressionBuilder::raiseExpressionErrorWithToken(const MMLTokenStruct& tok, int errorId) {
+	if (mpErrorRecv) {
+		mpErrorRecv->raiseError(tok.lineNo, tok.colNo, tok.rawStr.c_str(),
+			MMLErrors::getErrorString((errorId >= 0) ? errorId : MMLErrors::E_UNKNOWN_EXPR));
 	}
 }
 

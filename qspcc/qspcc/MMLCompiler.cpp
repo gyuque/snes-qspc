@@ -1,5 +1,6 @@
 #include "MMLCompiler.h"
 #include "MMLPreprocessor.h"
+#include "MMLErrors.h"
 #include <iostream>
 
 MMLCompiler::MMLCompiler() :mpExprBuilder(NULL), mVerboseLevel(0), mpLastDocument(NULL)
@@ -49,6 +50,7 @@ void MMLCompiler::clearCommands() {
 }
 
 bool MMLCompiler::compile(std::string filename) {
+	mCurrentFilename = filename;
 	if (mpExprBuilder) { return false; }
 
 	mTokenizer.setErrorReceiver(this);
@@ -77,7 +79,13 @@ bool MMLCompiler::compile(std::string filename) {
 	mpLastDocument = new MusicDocument();
 
 	preprocess();
-	mpLastDocument->loadInstrumentSet(); // プリプロセスでinst setが指定されている筈（されていなければエラー）
+	const InstLoadResult ld_res = mpLastDocument->loadInstrumentSet(); // プリプロセスでinst setが指定されている筈（されていなければエラー）
+	checkGlobalErrors(ld_res);
+	if (shouldAbort()) { // ERROR CHECK -------------
+		dumpAllErrors();
+		return false;
+	} // --------------------------------------------
+
 
 	generateCommands();
 	if (mVerboseLevel > 0) {
@@ -85,10 +93,10 @@ bool MMLCompiler::compile(std::string filename) {
 	}
 
 	applyContextDependentParams();
-	if (shouldAbort()) {
+	if (shouldAbort()) { // ERROR CHECK -------------
 		dumpAllErrors();
 		return false;
-	}
+	} // --------------------------------------------
 
 	if (mVerboseLevel > 0) {
 		dumpAllCommands();
@@ -281,6 +289,32 @@ int MMLCompiler::countTracks() {
 	return maxt + 1;
 }
 
+void MMLCompiler::checkGlobalErrors(InstLoadResult instLdResult) {
+	switch (instLdResult) {
+	case INSTLD_NOT_SET:
+		raiseError(-1, -1, "", MMLErrors::getErrorString(MMLErrors::E_INST_NOTSET));
+		break;
+
+	case INSTLD_DIR_NOTFOUND:
+		raiseError(-1, -1, "", MMLErrors::getErrorString(MMLErrors::E_INST_NOTFOUND));
+		break;
+
+	case INSTLD_MANIFEST_NOTFOUND:
+		raiseError(-1, -1, "", MMLErrors::getErrorString(MMLErrors::E_INST_M_NOTFOUND));
+		break;
+
+	case INSTLD_BAD_MANIFEST:
+		raiseError(-1, -1, "", MMLErrors::getErrorString(MMLErrors::E_INST_M_BAD));
+		break;
+
+	case INSTLD_BRR_NOTFOUND:
+		raiseError(-1, -1, "", MMLErrors::getErrorString(MMLErrors::E_INST_B_NOTFOUND));
+		break;
+
+	default:
+		break;
+	}
+}
 
 void MMLCompiler::raiseError(int lineno, int charno, const char* relStr, const std::string& message) {
 	MMLCompileError err;
@@ -300,7 +334,12 @@ void MMLCompiler::dumpAllErrors() {
 	const size_t n = mErrorList.size();
 	for (size_t i = 0; i < n; ++i) {
 		const MMLCompileError& err = mErrorList[i];
-		std::cerr << "At line " << (err.lineno + 1) << ", column " << (err.charno + 1);
+		std::cerr << mCurrentFilename << ": ";
+
+		if (err.lineno >= 0) {
+			std::cerr << "Line " << (err.lineno + 1) << ", column " << (err.charno + 1);
+		}
+
 		if (err.relatedString.size() > 0) {
 			std::cerr << "  '" << err.relatedString << "'";
 		}

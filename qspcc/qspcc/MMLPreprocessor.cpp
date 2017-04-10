@@ -34,7 +34,7 @@ void MMLPreprocessor::process_Using(const MMLExprStruct& expr) {
 	const std::string& instNameQuoted = expr.tokenList[1].rawStr;
 	const std::string& instName = cleanStringLiteral(instNameQuoted);
 
-	fprintf(stderr, "U:: %s\n", instName.c_str());
+	//fprintf(stderr, "U:: %s\n", instName.c_str());
 	if (mpDocument) {
 		mpDocument->setInstrumentSetName(instName);
 	}
@@ -44,7 +44,7 @@ void MMLPreprocessor::process_Title(const MMLExprStruct& expr) {
 	const std::string& sQuoted = expr.tokenList[1].rawStr;
 	const std::string& s = cleanStringLiteral(sQuoted);
 
-	fprintf(stderr, "T:: %s\n", s.c_str());
+	// fprintf(stderr, "T:: %s\n", s.c_str());
 	if (mpDocument) {
 		mpDocument->setTitle(s);
 	}
@@ -54,7 +54,7 @@ void MMLPreprocessor::process_Artist(const MMLExprStruct& expr) {
 	const std::string& sQuoted = expr.tokenList[1].rawStr;
 	const std::string& s = cleanStringLiteral(sQuoted);
 
-	fprintf(stderr, "A:: %s\n", s.c_str());
+	// fprintf(stderr, "A:: %s\n", s.c_str());
 	if (mpDocument) {
 		mpDocument->setArtistName(s);
 	}

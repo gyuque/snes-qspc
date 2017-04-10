@@ -36,6 +36,7 @@ protected:
 	bool matchMacroDefinitionExpressionForm(MacroDictionary& macroDic);
 	static bool matchExpressionForm(MMLExprList& outXList, int& inoutReadPos, const MMLTokenList& inTokenList, const char* letterString, int verboseLevel);
 	void raiseExpressionError(int tokenPos);
+	void raiseExpressionErrorWithToken(const MMLTokenStruct& tok, int errorId = -1);
 
 	void generateMacroExpandedTokenList(MacroDictionary& macroDic);
 	void expandMacrosInTokenList(MMLTokenList& outList, const MMLTokenList& inList, MacroDictionary& macroDic, int nestLevel);

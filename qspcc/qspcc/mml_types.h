@@ -82,4 +82,14 @@ typedef enum _MMLExpressionType {
 
 
 
+typedef enum {
+	INSTLD_OK = 0,
+
+	INSTLD_NOT_SET = -1,
+	INSTLD_DIR_NOTFOUND = -2,
+	INSTLD_MANIFEST_NOTFOUND = -3,
+	INSTLD_BAD_MANIFEST = -4,
+	INSTLD_BRR_NOTFOUND = -5
+} InstLoadResult;
+
 #endif

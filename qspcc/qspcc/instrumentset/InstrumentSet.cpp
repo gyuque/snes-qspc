@@ -25,19 +25,20 @@ void InstrumentSet::releaseAllBRRs() {
 	mBRRPtrs.clear();
 }
 
-bool InstrumentSet::load(const char* manifestPath, const char* baseDir) {
+InstLoadResult InstrumentSet::load(const char* manifestPath, const char* baseDir) {
 
 	picojson::object jObj = jsonObjectFromFile(manifestPath);
-
 	if (!jHasProperty(jObj, "base-frequency")) {
-		return false;
+		return INSTLD_BAD_MANIFEST;
 	}
 
 	mBaseFq = (float)jObj["base-frequency"].get<double>();
 	mOriginOctave = (int)jObj["origin-octave"].get<double>();
 
 	readInstDefs(jObj);
-	loadBRRBodies(baseDir);
+	if (!loadBRRBodies(baseDir)) {
+		return INSTLD_BRR_NOTFOUND;
+	}
 	mBRRPacker.addDummyBlock();
 
 	buildSrcTable();
@@ -46,7 +47,7 @@ bool InstrumentSet::load(const char* manifestPath, const char* baseDir) {
 	dumpSrcTable();
 	dumpInstTable();
 //	dumpPackedBRR();
-	return true;
+	return INSTLD_OK;
 }
 
 unsigned int InstrumentSet::findMaxInst(const picojson::object& parentObj) {
@@ -139,7 +140,9 @@ bool InstrumentSet::loadBRRBodies(const std::string& baseDir) {
 		}
 
 		std::string path = baseDir + '/' + fn;
-		loadBRRIf(fn, path);
+		if (!loadBRRIf(fn, path)) {
+			return false;
+		}
 	}
 
 	return true;
