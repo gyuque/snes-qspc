@@ -6,7 +6,7 @@
 typedef std::vector<double> RawFqList;
 typedef std::vector<double> FqFactorList;
 typedef std::vector<unsigned short> FqRegisterValueList;
-RawFqList generateNotesFqTable(int startOctave, int nOctaves);
+RawFqList generateNotesFqTable(int startOctave, int nOctaves, bool verbose);
 FqFactorList generateFqFactorTable(const RawFqList& inList, double baseFq);
 FqRegisterValueList generateFqRegisterValueTable(const FqFactorList& inList);
 

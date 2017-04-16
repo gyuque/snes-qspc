@@ -3,9 +3,11 @@
 #include "FrequencyTable.h"
 
 // Še‰¹ŠK‚Ìü”g”‚ğŒvZ
-RawFqList generateNotesFqTable(int startOctave, int nOctaves) {
+RawFqList generateNotesFqTable(int startOctave, int nOctaves, bool verbose) {
 	RawFqList ls;
-	fprintf(stderr, "Start octave: %d\n\n", startOctave);
+	if (verbose) {
+		fprintf(stderr, "Base octave=%d\n", startOctave);
+	}
 
 	for (int k = 0; k < nOctaves; ++k) {
 		for (int i = 0; i < 12; ++i) {

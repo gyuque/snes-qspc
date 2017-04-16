@@ -25,6 +25,10 @@ void InstrumentSet::releaseAllBRRs() {
 	mBRRPtrs.clear();
 }
 
+void InstrumentSet::setVerboseLevel(int lv) {
+	mVerboseLevel = lv;
+}
+
 InstLoadResult InstrumentSet::load(const char* manifestPath, const char* baseDir) {
 
 	picojson::object jObj = jsonObjectFromFile(manifestPath);
@@ -44,9 +48,13 @@ InstLoadResult InstrumentSet::load(const char* manifestPath, const char* baseDir
 	buildSrcTable();
 	writeInstSrcNumbers();
 
-	dumpSrcTable();
-	dumpInstTable();
-//	dumpPackedBRR();
+	if (mVerboseLevel > 0) {
+		dumpSrcTable();
+		dumpInstTable();
+		if (mVerboseLevel > 1) {
+			dumpPackedBRR();
+		}
+	}
 	return INSTLD_OK;
 }
 
@@ -115,7 +123,9 @@ void InstrumentSet::addInst(const picojson::object& src) {
 		array_if(def_s.adsr.R  , j_adsr, 3);
 	}
 
-	fprintf(stderr, "Inst filename: %s\n", def_s.filename.c_str());
+	if (mVerboseLevel > 0) {
+		fprintf(stderr, "Inst filename: %s\n", def_s.filename.c_str());
+	}
 
 	mInstList.push_back(def_s);
 }
@@ -160,11 +170,11 @@ bool InstrumentSet::loadBRRIf(const std::string& name, const std::string& path) 
 	}
 
 	C700BRR* pBRR = new C700BRR(name);
-	pBRR->load(path);
+	pBRR->load(path, mVerboseLevel > 0);
 	//pBRR->dump();
 
 	mBRRPtrs.push_back(pBRR);
-	mBRRPacker.addBRR(pBRR);
+	mBRRPacker.addBRR(pBRR, mVerboseLevel > 0);
 	return true;
 }
 
@@ -207,7 +217,10 @@ void InstrumentSet::buildSrcTable() {
 		if (!existingSrc) {
 			int a_ofs = mBRRPacker.getAttackOffsetByName(def.filename);
 			int l_ofs = mBRRPacker.getLoopOffsetByName(def.filename, true);
-			fprintf(stderr, " <<<<< %d  %d \n", a_ofs, l_ofs);
+			if (mVerboseLevel > 0) {
+				fprintf(stderr, " <<<<< %d  %d \n", a_ofs, l_ofs);
+			}
+
 			if (a_ofs < 0 && l_ofs >= 0) {
 				// loop only
 				WavSrc src;

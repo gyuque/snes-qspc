@@ -38,7 +38,7 @@ bool Embedder::exportToFile(const char* filename, const char* hi_filename) {
 	return suc_1 && suc_2;
 }
 
-void Embedder::embed(
+void Embedder::embed(bool bVerbose,
 		IEmbedderSource* pMusicHeaderSource,
 		IEmbedderSource* pFqTableSource,
 		IEmbedderSource* pSeqSource,
@@ -46,12 +46,89 @@ void Embedder::embed(
 		IEmbedderSource* pBRRDirSource,
 		IEmbedderSource* pBRRBodySource
 	) {
-	embedFromSource(pMusicHeaderSource, mConfig.getMusicHeaderOrigin(), mConfig.calcMusicHeaderCapacity(), "music_header");
-	embedFromSource(pFqTableSource, mConfig.getFqTableOrigin(), mConfig.calcFqTableCapacity(), "fqtable");
-	embedFromSource(pSeqSource, mConfig.getSequenceOrigin(), mConfig.calcSequenceCapacity(), "sequence");
-	embedFromSource(pInstDirSource, mConfig.getInstDirOrigin(), mConfig.calcInstDirCapacity(), "instdir");
-	embedFromSource(pBRRDirSource, mConfig.getBRRDirOrigin(), mConfig.calcBRRDirCapacity(), "brrdir");
-	embedFromSource(pBRRBodySource, mConfig.getBRRBodyOrigin(), mConfig.calcBRRBodyCapacity(), "brrbody");
+	mResultList.clear();
+
+	embedFromSource(pMusicHeaderSource, mConfig.getMusicHeaderOrigin(), mConfig.calcMusicHeaderCapacity(), "Header");
+	embedFromSource(pFqTableSource, mConfig.getFqTableOrigin(), mConfig.calcFqTableCapacity(), "Fq Table");
+	embedFromSource(pSeqSource, mConfig.getSequenceOrigin(), mConfig.calcSequenceCapacity(), "Sequence");
+	embedFromSource(pInstDirSource, mConfig.getInstDirOrigin(), mConfig.calcInstDirCapacity(), "Inst Dir");
+	embedFromSource(pBRRDirSource, mConfig.getBRRDirOrigin(), mConfig.calcBRRDirCapacity(), "BRR dir");
+	embedFromSource(pBRRBodySource, mConfig.getBRRBodyOrigin(), mConfig.calcBRRBodyCapacity(), "BRR body");
+
+	if (!bVerbose) {
+		mResultList.erase(mResultList.begin());
+		mResultList.erase(mResultList.begin()); // remove unnecessary information
+	}
+
+	showResults();
+}
+
+static void printNChars(int k, int num) {
+	for (int i = 0; i < num; ++i) {
+		fputc(k, stderr);
+	}
+}
+
+void Embedder::showResults() {
+	size_t i;
+	size_t n = mResultList.size();
+
+	unsigned int max_cols = 1;
+
+	for (i = 0; i < n; ++i) {
+		const EmbedResult& res = mResultList[i];
+		const size_t name_len = res.sectionName.size();
+		if (name_len > max_cols) {
+			max_cols = name_len;
+		}
+	}
+
+	// print ---------------------------------------------------------
+
+	fprintf(stderr, "+----------++");
+	for (i = 0; i < n; ++i) {
+		printNChars('-', max_cols + 2);
+		fputc('+', stderr);
+	}
+
+	fprintf(stderr, "\n| Section  ||");
+	for (i = 0; i < n; ++i) {
+		const EmbedResult& res = mResultList[i];
+		const size_t name_len = res.sectionName.size();
+
+		fputc(' ', stderr);
+		std::cerr << res.sectionName;
+		printNChars(' ', (max_cols - name_len) + 1);
+
+		fprintf(stderr, "|");
+	}
+
+	fprintf(stderr, "\n+----------++");
+	for (i = 0; i < n; ++i) {
+		printNChars('-', max_cols+2);
+		fputc('+', stderr);
+	}
+
+	fprintf(stderr, "\n| Capacity ||");
+	for (i = 0; i < n; ++i) {
+		const EmbedResult& res = mResultList[i];
+		fprintf(stderr, " %6d B |", res.capacity);
+	}
+
+	fprintf(stderr, "\n| Used     ||");
+	for (i = 0; i < n; ++i) {
+		const EmbedResult& res = mResultList[i];
+		const char mark = res.success ? ' ' : '!';
+		fprintf(stderr, "%c    %3d%%%c|", mark, res.percentage, mark);
+	}
+
+	fprintf(stderr, "\n+----------++");
+	for (i = 0; i < n; ++i) {
+		printNChars('-', max_cols + 2);
+		fputc('+', stderr);
+	}
+
+	fputc('\n', stderr);
 }
 
 BinFile* Embedder::loadBinFileWithBase(const std::string& baseDir, const char* filename) {
@@ -77,9 +154,18 @@ void Embedder::embedFromSource(IEmbedderSource* pSource, unsigned int origin, un
 	const unsigned int lastAddr = origin + pSource->esGetSize() - 1;
 	const int percentage = (capacity == 0) ? 0 : (pSource->esGetSize() * 100) / capacity;
 
-	fprintf(stderr, "Embedding: %s\n", chunkName.c_str());
-	fprintf(stderr, " Address: %04X - %04X\n", origin, lastAddr);
-	fprintf(stderr, " Size: %d/%d bytes(%d%%)\n", pSource->esGetSize(), capacity, percentage);
+	//fprintf(stderr, "Embedding: %s\n", chunkName.c_str());
+	//fprintf(stderr, " Address: %04X - %04X\n", origin, lastAddr);
+	//fprintf(stderr, " Size: %d/%d bytes(%d%%)\n", pSource->esGetSize(), capacity, percentage);
+
+	EmbedResult res;
+	res.firstAddress = origin;
+	res.lastAddress = lastAddr;
+	res.percentage = percentage;
+	res.sectionName = chunkName;
+	res.capacity = capacity;
+	res.success = false;
+	mResultList.push_back(res);
 
 	const size_t imgSize = mpSourceBin->size();
 	if (lastAddr >= imgSize) {
@@ -96,4 +182,18 @@ void Embedder::embedFromSource(IEmbedderSource* pSource, unsigned int origin, un
 		const uint8_t k = pSource->esGetAt(i);
 		mpSourceBin->writeByte(origin + i, k);
 	}
+
+	mResultList[mResultList.size() - 1].success = true; // Change success flag
+}
+
+bool Embedder::checkAllSuccess() const {
+	EmbedResultList::const_iterator it;
+
+	for (it = mResultList.begin(); it != mResultList.end(); it++) {
+		if (!(it->success)) {
+			return false;
+		}
+	}
+
+	return true;
 }

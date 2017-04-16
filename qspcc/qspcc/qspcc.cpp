@@ -9,6 +9,7 @@
 #include "tester/testers.h"
 #include "win32/pwd.h"
 #include "MMLErrors.h"
+#include "MMLUtility.h"
 
 typedef std::vector<MMLCompiler*> PCompilerList;
 
@@ -83,26 +84,35 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	if (embed_ready) {
+		const std::string kStrExporting = MMLErrors::getErrorString(MMLErrors::MSG_EXPORTING);
+
 		if (opt_summary.verboseLevel > 0) {
 			fprintf(stderr, "Embedding sequence data...\n");
 			embd.dumpConfig();
 		}
 
 		// ==== コンパイル済みデータを埋め込み ====
+		//           Embed generated data
 		ROMEmbedder r_embd;
+		r_embd.setVerboseLevel(opt_summary.verboseLevel);
 		r_embd.setConfig(&embd.referConfig());
 		r_embd.setBaseDir(getSelfDir());
-		r_embd.loadTemplate(sGlobalConfig.getRomImageFileName(), sGlobalConfig.getRomMapFileName());
+		r_embd.loadTemplate(sGlobalConfig.getRomImageFileName(), sGlobalConfig.getRomMapFileName(), opt_summary.verboseLevel);
 		r_embd.clearMetadataArea(sGlobalConfig.getMaxSongTracks());
 		r_embd.writeMetadataHeader(opt_summary.quickLoadEnabled);
+
+		std::cerr << std::endl << "==================== Embedder Result ====================" << std::endl;
+		std::cerr << MMLErrors::getErrorString(MMLErrors::MSG_EMBEDEXP) << std::endl;
 
 		const size_t nCompiledFiles = sCompilerList.size();
 		for (i = 0; i < nCompiledFiles; ++i) {
 			MMLCompiler* pCompiler = sCompilerList[i];
 			MusicDocument* pDoc = pCompiler->referLastDocument();
+			std::cerr << std::endl << pCompiler->getSourceFileName() << "  " << pDoc->getTitle() << std::endl;
 
 			// ドライバイメージに書き込み
-			embd.embed(
+			// Write data to driver image
+			embd.embed( opt_summary.verboseLevel > 0,
 				pDoc->referMusicHeaderSource(),
 				pDoc->referFqTableBytesSource(),
 				pDoc->referSequenceBytesSource(),
@@ -114,10 +124,33 @@ int _tmain(int argc, _TCHAR* argv[])
 			const BinFile* driverBin = embd.referBin();
 			r_embd.writeMetadata(i, pDoc->getTitle(), pDoc->getArtistName());
 			r_embd.writeSoundDriverImage(i, driverBin);
+
+			// 個別ファイル出力
+			// Export single music file
+			const std::string nameOnly = getFilenameOnly(pCompiler->getSourceFileName());
+			const std::string spcFN = nameOnly + ".spc";
+			std::cerr << kStrExporting << " SPC file -> " << spcFN << std::endl;
 		}
 
-		embd.exportToFile("drvimg-lo.bin", "drvimg-hi.bin");
-		r_embd.exportToFile("output-test.smc");
+		if (embd.checkAllSuccess()) {
+			std::cerr << std::endl;
+			std::string romFileName = "qSPCPlay.smc";
+			std::string binLoName = "drvimg-lo.bin";
+			std::string binHiName = "drvimg-hi.bin";
+
+			// EX: BIN
+			std::cerr << kStrExporting << " Raw driver -> " << binLoName << ", " << binHiName << std::endl;
+			embd.exportToFile(binLoName.c_str(), binHiName.c_str());
+
+			// EX: ROM
+			std::cerr << kStrExporting << " Player ROM -> " << romFileName << std::endl;
+			r_embd.updateChecksum();
+			r_embd.exportToFile(romFileName.c_str());
+
+			std::cerr << MMLErrors::getErrorString(MMLErrors::MSG_SUCCESSS) << std::endl;
+		} else {
+			std::cerr << "**** " << MMLErrors::getErrorString(MMLErrors::E_EMB_CAPACITY_EX) << " ****" << std::endl;
+		}
 	}
 
 	releaseAllCompilers(sCompilerList);
@@ -133,7 +166,8 @@ bool addCompiler(PCompilerList& outCompilerList, const std::string inputFile, co
 
 	MusicDocument* doc = compiler->referLastDocument();
 	// バイナリ生成
-	doc->generateSequenceImage();
+	// Generate binary codes
+	doc->generateSequenceImage(opt_summary.verboseLevel > 0);
 	doc->generateInstrumentDataBinaries(
 		embd_config.getProgramOrigin() + embd_config.getBRRBodyOrigin()
 		);
@@ -202,14 +236,13 @@ void showUsage() {
 	}
 	fprintf(stderr, "------------------------------------------------------------------------\n");
 	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  qspc [options] -i <input mml 1> -i <input mml 2> -i <input mml 3>...\n");
-	fprintf(stderr, "    or simply\n");
-	fprintf(stderr, "  qspc <input mml 1> <input mml 2> <input mml 3>...\n\n");
+	fprintf(stderr, "  qspc [options] <input mml 1> <input mml 2> <input mml 3>...\n\n");
 	fprintf(stderr, "All options:\n");
-	fprintf(stderr, "  -i  : Input mml file\n");
+	fprintf(stderr, "  -bin: Generate driver image (raw) binary\n");
 	fprintf(stderr, "  -rom: Generate SNES ROM file only\n");
 	fprintf(stderr, "  -spc: Generate SPC file only\n");
 	fprintf(stderr, "  -q  : Quick load mode (TRACKS MUST SHARE INSTRUMENTS)\n");
 	fprintf(stderr, "  -v  : Verbose mode\n");
 	fprintf(stderr, "  -V  : Very verbose mode\n");
+	fprintf(stderr, "  -o=filename to specify name of output ROM file\n");
 }

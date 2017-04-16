@@ -2,6 +2,7 @@
 #define EMBEDDER_H_INCLUDED
 #include "EmbedderConfig.h"
 #include "BinFile.h"
+#include <vector>
 
 class IEmbedderSource {
 public:
@@ -10,6 +11,17 @@ public:
 };
 
 #include "MusicDocument.h"
+
+typedef struct _EmbedResult {
+	std::string sectionName;
+	unsigned int firstAddress;
+	unsigned int lastAddress;
+	unsigned int percentage;
+	size_t capacity;
+	bool success;
+} EmbedResult;
+
+typedef std::vector<EmbedResult> EmbedResultList;
 
 class Embedder
 {
@@ -23,7 +35,7 @@ public:
 	void dumpConfig();
 	bool exportToFile(const char* filename, const char* hi_filename);
 
-	void embed(
+	void embed(bool bVerbose,
 		IEmbedderSource* pMusicHeaderSource,
 		IEmbedderSource* pFqTableSource,
 		IEmbedderSource* pSeqSource,
@@ -36,12 +48,17 @@ public:
 	const EmbedderConfig& referConfig() const { return mConfig; }
 	const BinFile* referBin() const { return mpSourceBin; }
 
+	bool checkAllSuccess() const;
+
 	static BinFile* loadBinFileWithBase(const std::string& baseDir, const char* filename);
 protected:
+	EmbedResultList mResultList;
 
 	std::string mBaseDir;
 	EmbedderConfig mConfig;
 	BinFile* mpSourceBin;
+
+	void showResults();
 };
 
 #endif

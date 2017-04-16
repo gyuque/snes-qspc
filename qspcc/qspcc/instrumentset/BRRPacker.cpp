@@ -8,7 +8,7 @@ BRRPacker::~BRRPacker() {
 
 }
 
-void BRRPacker::addBRR(const C700BRR* pBRR) {
+void BRRPacker::addBRR(const C700BRR* pBRR, bool verbose) {
 	const unsigned int a_size = pBRR->getAttackPartBytesSize();
 	const unsigned int l_size = pBRR->getLoopPartBytesSize();
 
@@ -17,7 +17,9 @@ void BRRPacker::addBRR(const C700BRR* pBRR) {
 		addBlocks(pBRR, false);
 		mAttackNameMap[pBRR->getName()] = a_offset;
 
-		fprintf(stderr, " + BRR \"%s\" attack offset: %04X(%d)\n", pBRR->getName().c_str(), a_offset, a_offset);
+		if (verbose) {
+			fprintf(stderr, " + BRR \"%s\" attack offset: %04X(%d)\n", pBRR->getName().c_str(), a_offset, a_offset);
+		}
 	}
 
 	if (l_size) {
@@ -25,7 +27,9 @@ void BRRPacker::addBRR(const C700BRR* pBRR) {
 		addBlocks(pBRR, true);
 		mLoopNameMap[pBRR->getName()] = l_offset;
 
-		fprintf(stderr, " + BRR \"%s\" loop offset: %04X(%d)\n", pBRR->getName().c_str(), l_offset, l_offset);
+		if (verbose) {
+			fprintf(stderr, " + BRR \"%s\" loop offset: %04X(%d)\n", pBRR->getName().c_str(), l_offset, l_offset);
+		}
 	}
 }
 

@@ -13,11 +13,15 @@ public:
 	static const size_t k32KB = 32 * 1024;
 
 	uint8_t at(unsigned int pos) const;
+	uint16_t at_LE16(unsigned int pos) const;
 	void writeAt(unsigned int pos, uint8_t val);
 	size_t size() const { return mFileSize; }
 	void writeByte(unsigned int position, uint8_t val);
+	void writeUint16LE(unsigned int pos, uint16_t val);
 
 	bool exportToFile(const char* filename, unsigned int startPos = 0, int exportSize = -1);
+
+	uint16_t calcChecksum() const;
 protected:
 	uint8_t* mContent;
 	void load(const char* filename);

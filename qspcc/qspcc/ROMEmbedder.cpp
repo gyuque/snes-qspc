@@ -8,7 +8,10 @@
 #define kSoundMetaBlockSize (32)
 #define kMaxTitleLength (31)
 
-ROMEmbedder::ROMEmbedder()
+#define kChecksumC_Addr 0x7FDC
+#define kChecksum_Addr  0x7FDE
+
+ROMEmbedder::ROMEmbedder() : mVerboseLevel(0)
 {
 	mpUsingConfig = nullptr;
 	mpSourceBin = nullptr;
@@ -27,13 +30,13 @@ void ROMEmbedder::setConfig(const EmbedderConfig* pConfig) {
 	mpUsingConfig = pConfig;
 }
 
-void ROMEmbedder::loadTemplate(const std::string& filename, const std::string& mapFilename) {
+void ROMEmbedder::loadTemplate(const std::string& filename, const std::string& mapFilename, int verboseLevel) {
 	if (mpSourceBin || !(mpUsingConfig) ) { return ; }
 	
 	mpSourceBin = Embedder::loadBinFileWithBase(mBaseDir, filename.c_str());
 
 	std::string mapFullPath = mBaseDir + "/" + mapFilename;
-	mRomMap.load(mapFullPath.c_str());
+	mRomMap.load(mapFullPath.c_str(), verboseLevel);
 
 }
 
@@ -77,7 +80,10 @@ bool ROMEmbedder::writeSoundDriverImage(unsigned int index, const BinFile* pBin)
 
 
 	if (sec && hiSec) {
-		fprintf(stderr, "L:%04X H:%04X\n", sec->offset, hiSec->offset);
+		if (mVerboseLevel > 0) {
+			fprintf(stderr, "L:%04X H:%04X\n", sec->offset, hiSec->offset);
+		}
+
 		writeBin(sec->offset, pBin, 0);
 		writeBin(hiSec->offset, pBin, BinFile::k32KB);
 	}
@@ -86,7 +92,9 @@ bool ROMEmbedder::writeSoundDriverImage(unsigned int index, const BinFile* pBin)
 }
 
 void ROMEmbedder::writeString(unsigned int startAddress, const std::string& strData, size_t validMaxLength, size_t bufferLength) {
-	fprintf(stderr, "%X <- %s\n", startAddress, strData.c_str());
+	if (mVerboseLevel > 0) {
+		fprintf(stderr, "%X <- %s\n", startAddress, strData.c_str());
+	}
 
 	size_t i;
 	const size_t n = std::min<size_t>(strData.size(), validMaxLength);
@@ -123,6 +131,31 @@ bool ROMEmbedder::exportToFile(const char* filename) {
 	return true;
 }
 
+inline uint16_t sum_comp(uint16_t i) {
+	return ~i & 0xFFFF;
+}
+
+bool ROMEmbedder::validateChecksumPair() const {
+	if (!mpSourceBin) {
+		return false;
+	}
+
+	const uint16_t c = mpSourceBin->at_LE16(kChecksumC_Addr);
+	const uint16_t s = mpSourceBin->at_LE16(kChecksum_Addr);
+
+	return c == sum_comp(s);
+}
+
+bool ROMEmbedder::updateChecksum() {
+	if (!validateChecksumPair()) {
+		return false;
+	}
+
+	const uint16_t s = mpSourceBin->calcChecksum();
+	mpSourceBin->writeUint16LE(kChecksumC_Addr, sum_comp(s));
+	mpSourceBin->writeUint16LE(kChecksum_Addr, s);
+}
+
 // Mapping file loader
 
 ROMMapLoader::ROMMapLoader() : mReRomDef("(ROM[0-9a-zA-Z]+)\\s*:.+size\\s*=\\s*\\$([0-9a-fA-F]+).+#(.+)") {
@@ -131,7 +164,7 @@ ROMMapLoader::ROMMapLoader() : mReRomDef("(ROM[0-9a-zA-Z]+)\\s*:.+size\\s*=\\s*\
 ROMMapLoader::~ROMMapLoader() {
 }
 
-bool ROMMapLoader::load(const char* path) {
+bool ROMMapLoader::load(const char* path, int verboseLevel) {
 	std::ifstream ifs(path);
 	if (ifs.fail()) {
 		return false;
@@ -139,11 +172,14 @@ bool ROMMapLoader::load(const char* path) {
 
 	std::string ln;
 	while (std::getline(ifs, ln)) {
-		parseLine(ln);
+		parseLine(ln, verboseLevel);
 	}
 
 	calcOffset();
-	dump();
+	if (verboseLevel > 0) {
+		dump();
+	}
+
 	return true;
 }
 
@@ -155,7 +191,7 @@ static bool is_snd_meta(const std::string& s) {
 	return NULL != strstr(s.c_str(), "smeta");
 }
 
-void ROMMapLoader::parseLine(const std::string& ln) {
+void ROMMapLoader::parseLine(const std::string& ln, int verboseLevel) {
 	std::cmatch m;
 
 	const bool found = std::regex_search(ln.c_str(), m, mReRomDef);
@@ -166,16 +202,16 @@ void ROMMapLoader::parseLine(const std::string& ln) {
 		size_t h;
 		sscanf(hex_size.c_str(), "%x", &h);
 
-		fprintf(stderr, "%s | %s(%d) | %s\n", m[1].str().c_str(), hex_size.c_str(), h, comment.c_str());
+		if (verboseLevel > 1) { fprintf(stderr, "%s | %s(%d) | %s\n", m[1].str().c_str(), hex_size.c_str(), h, comment.c_str()); }
 
 		RomSectionEntry ent;
 		ent.size = h;
 		ent.type = ROMSEC_OTHER;
 		if (is_snddrv(comment)) {
-			fprintf(stderr, " ^\n");
+			if (verboseLevel > 1) { fprintf(stderr, " ^\n"); }
 			ent.type = ROMSEC_SOUND_DRIVER;
 		} else if (is_snd_meta(comment)) {
-			fprintf(stderr, " ~\n");
+			if (verboseLevel > 1) { fprintf(stderr, " ~\n"); }
 			ent.type = ROMSEC_SOUND_META;
 		}
 

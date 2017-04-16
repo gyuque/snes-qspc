@@ -24,13 +24,13 @@ class ROMMapLoader {
 public:
 	ROMMapLoader();
 	virtual ~ROMMapLoader();
-	bool load(const char* path);
+	bool load(const char* path, int verboseLevel);
 
 	RomSectionEntry* findDriverSection(unsigned int index, bool hi_part);
 	RomSectionEntry* findSoundMetadataSection();
 	void dump();
 protected:
-	void parseLine(const std::string& ln);
+	void parseLine(const std::string& ln, int verboseLevel);
 	void calcOffset();
 
 	int findSectionWithType(RomSectionType type, unsigned int driverIndex);
@@ -45,10 +45,11 @@ class ROMEmbedder
 public:
 	ROMEmbedder();
 	virtual ~ROMEmbedder();
+	void setVerboseLevel(int lv) { mVerboseLevel = lv; }
 
 	void setBaseDir(const std::string& baseDir);
 	void setConfig(const EmbedderConfig* pConfig);
-	void loadTemplate(const std::string& filename, const std::string& mapFilename);
+	void loadTemplate(const std::string& filename, const std::string& mapFilename, int verboseLevel);
 
 	void clearMetadataArea(size_t nTracks);
 	void writeMetadataHeader(bool quickLoad);
@@ -58,7 +59,11 @@ public:
 	bool writeSoundDriverImage(unsigned int index, const BinFile* pBin);
 
 	bool exportToFile(const char* filename);
+
+	bool updateChecksum();
+	bool validateChecksumPair() const;
 protected:
+	int mVerboseLevel;
 	std::string mBaseDir;
 	BinFile* mpSourceBin;
 	const EmbedderConfig* mpUsingConfig;

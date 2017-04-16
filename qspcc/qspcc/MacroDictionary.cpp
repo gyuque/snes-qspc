@@ -2,7 +2,7 @@
 
 
 
-MacroDictionary::MacroDictionary() {
+MacroDictionary::MacroDictionary() :mVerboseLevel(0) {
 
 }
 
@@ -19,7 +19,9 @@ void MacroDictionary::registerFromExpr(const MMLExprStruct& srcExpr) {
 	const std::string& name = srcExpr.tokenList.at(0).rawStr;
 
 	const int numInner = n - 2;
-	fprintf(stderr, "[[ %d toks ]]\n", numInner);
+	if (mVerboseLevel > 0) {
+		fprintf(stderr, "[[ %d toks ]]\n", numInner);
+	}
 
 	MacroDefinition& def = mNameMap[name];
 	def.tokenList.clear();
@@ -28,7 +30,9 @@ void MacroDictionary::registerFromExpr(const MMLExprStruct& srcExpr) {
 
 		def.tokenList.push_back(tok);
 
-		fprintf(stderr, "  [[ %s ]]\n", tok.rawStr.c_str());
+		if (mVerboseLevel > 0) {
+			fprintf(stderr, "  [[ %s ]]\n", tok.rawStr.c_str());
+		}
 	}
 }
 

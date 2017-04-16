@@ -25,6 +25,13 @@ public:
 	static const int E_INST_M_NOTFOUND = 82;
 	static const int E_INST_M_BAD      = 83;
 	static const int E_INST_B_NOTFOUND = 84;
+	static const int E_EMB_CAPACITY_EX = 90;
+
+	static const int MSG_COMPILING = 101;
+	static const int MSG_EMBEDEXP  = 102;
+	static const int MSG_EXPORTING = 103;
+	static const int MSG_SUCCESSS  = 110;
+
 protected:
 	MMLErrors();
 	virtual ~MMLErrors();

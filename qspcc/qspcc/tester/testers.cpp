@@ -13,18 +13,18 @@ void doDocumentTest(Embedder* pEmbedder) {
 		t->addByte(0x7F);
 	}
 
-	doc.generateSequenceImage();
+	doc.generateSequenceImage(true);
 	doc.dumpSequenceBlob();
 
 	BytesSourceProxy* pSeqSrc = doc.referSequenceBytesSource();
 	fprintf(stderr, "<%d> %02X %02X\n", pSeqSrc->esGetSize(), pSeqSrc->esGetAt(256), pSeqSrc->esGetAt(257));
 
-	pEmbedder->embed(nullptr, nullptr, pSeqSrc, nullptr, nullptr, nullptr);
+	pEmbedder->embed(true, nullptr, nullptr, pSeqSrc, nullptr, nullptr, nullptr);
 //	pEmbedder->exportToFile("test-out.bin");
 }
 
 void doFrequencyTableTest() {
-	RawFqList fq_ls = generateNotesFqTable(1, 6);
+	RawFqList fq_ls = generateNotesFqTable(1, 6, true);
 	//dumpRawFqTable(fq_ls);
 	FqFactorList r_ls = generateFqFactorTable(fq_ls, 500.0);
 	//dumpFqFactorTable(r_ls);

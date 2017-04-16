@@ -16,11 +16,13 @@ public:
 	MacroDictionary();
 	virtual ~MacroDictionary();
 
+	void setVerboseLevel(int lv) { mVerboseLevel = lv; }
 	void registerFromExpr(const MMLExprStruct& srcExpr);
 	bool exists(const std::string& name) const;
 
 	const MacroDefinition& referMacroDefinition(const std::string& name) const;
 protected:
+	int mVerboseLevel;
 	MacroDefNameMap mNameMap;
 };
 

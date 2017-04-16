@@ -20,7 +20,7 @@ public:
 	virtual ~C700BRR();
 
 	std::string getName() const { return mName; }
-	bool load(const std::string& path);
+	bool load(const std::string& path, bool verbose);
 
 	void dump();
 

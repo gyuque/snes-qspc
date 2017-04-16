@@ -22,6 +22,7 @@ public:
 	void setVerboseLevel(int lv);
 
 	MusicDocument* referLastDocument() { return mpLastDocument; }
+	const std::string& getSourceFileName() const { return mCurrentFilename; }
 protected:
 	void releaseDocumentIf();
 	bool shouldAbort() const;

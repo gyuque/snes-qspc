@@ -53,6 +53,9 @@ bool MMLCompiler::compile(std::string filename) {
 	mCurrentFilename = filename;
 	if (mpExprBuilder) { return false; }
 
+	std::cerr << MMLErrors::getErrorString(MMLErrors::MSG_COMPILING) << filename << "..";
+
+
 	mTokenizer.setErrorReceiver(this);
 	if (!mTokenizer.loadFile(filename.c_str())) {
 		//fprintf(stderr, "Failed to load: %s\n", filename.c_str());
@@ -60,7 +63,12 @@ bool MMLCompiler::compile(std::string filename) {
 		return false;
 	}
 
+	if (0 == mVerboseLevel) {
+		std::cerr << "." << std::endl;
+	}
+
 	MacroDictionary macro_dic;
+	macro_dic.setVerboseLevel(mVerboseLevel);
 
 	mpExprBuilder = new MMLExpressionBuilder(&mTokenizer);
 	mpExprBuilder->setErrorReceiver(this);
@@ -79,12 +87,13 @@ bool MMLCompiler::compile(std::string filename) {
 	mpLastDocument = new MusicDocument();
 
 	preprocess();
-	const InstLoadResult ld_res = mpLastDocument->loadInstrumentSet(); // プリプロセスでinst setが指定されている筈（されていなければエラー）
+	const InstLoadResult ld_res = mpLastDocument->loadInstrumentSet(mVerboseLevel); // プリプロセスでinst setが指定されている筈（されていなければエラー）
 	checkGlobalErrors(ld_res);
 	if (shouldAbort()) { // ERROR CHECK -------------
 		dumpAllErrors();
 		return false;
 	} // --------------------------------------------
+	mpLastDocument->validateMetadata();
 
 
 	generateCommands();
@@ -207,7 +216,9 @@ void MMLCompiler::applyContextDependentParams() {
 
 void MMLCompiler::generateByteCodeTracks() {
 	const int numOfTracks = countTracks();
-	fprintf(stderr, "[  %d Track(s)  ]\n", numOfTracks);
+	if (mVerboseLevel > 0) {
+		fprintf(stderr, "[  %d Track(s)  ]\n", numOfTracks);
+	}
 
 	for (int i = 0; i < numOfTracks; ++i) {
 		MusicTrack* track = mpLastDocument->appendTrack();
@@ -215,7 +226,7 @@ void MMLCompiler::generateByteCodeTracks() {
 		generateATrack(i, track);
 	}
 
-	mpLastDocument->calcDataSize(NULL, true);
+	mpLastDocument->calcDataSize(NULL, mVerboseLevel > 0);
 }
 
 void MMLCompiler::determineCommandAddress(int trackIndex, MusicTrack* pTrack) {

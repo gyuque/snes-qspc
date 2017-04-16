@@ -36,6 +36,7 @@ class InstrumentSet
 public:
 	InstrumentSet();
 	virtual ~InstrumentSet();
+	void setVerboseLevel(int lv);
 
 	InstLoadResult load(const char* manifestPath, const char* baseDir);
 
@@ -52,6 +53,8 @@ public:
 	float getBaseEq() const { return mBaseFq; }
 	int getOriginOctave() const { return mOriginOctave; }
 protected:
+	int mVerboseLevel;
+
 	float mBaseFq;
 	int mOriginOctave;
 	InstDefList mInstList;

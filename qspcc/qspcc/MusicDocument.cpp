@@ -72,6 +72,21 @@ MusicTrack* MusicDocument::appendTrack() {
 	return t;
 }
 
+void MusicDocument::validateMetadata() {
+	const std::string& t = getTitle();
+	const std::string& a = getArtistName();
+
+	if (t.size() == 0) {
+		fprintf(stderr, "Warning: Title is empty.\n");
+		setTitle("Untitled");
+	}
+
+	if (a.size() == 0) {
+		fprintf(stderr, "Warning: Artist name is empty.\n");
+		setArtistName("Unknown");
+	}
+}
+
 bool MusicDocument::isInstrumentSetNameSet() const {
 	return mInstrumentSetName.size() > 0;
 }
@@ -109,7 +124,7 @@ void MusicDocument::calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo)
 	}
 }
 
-void MusicDocument::generateSequenceImage() {
+void MusicDocument::generateSequenceImage(bool bVerbose) {
 	mGeneratedSequenceBlob.clear();
 
 	int trackBufferLen;
@@ -127,7 +142,7 @@ void MusicDocument::generateSequenceImage() {
 
 	}
 
-	generateHeaderImage();
+	generateHeaderImage(bVerbose);
 }
 
 static uint8_t calcTimerIntervalForTempo(unsigned int tempo) {
@@ -135,13 +150,16 @@ static uint8_t calcTimerIntervalForTempo(unsigned int tempo) {
 	return (uint8_t)(f / (48.0 * 0.125) + 0.49);
 }
 
-void MusicDocument::generateHeaderImage() {
+void MusicDocument::generateHeaderImage(bool bVerbose) {
 	mMusicHeaderBlob.clear();
 	mMusicHeaderBlob.push_back( countTracks() );
 	mMusicHeaderBlob.push_back( mGeneratedTrackLength >> 8 );
 	mMusicHeaderBlob.push_back( calcTimerIntervalForTempo(mTempo) );
 
-	dumpHex(mMusicHeaderBlob);
+	if (bVerbose) {
+		fputs("SeqHeader= ", stderr);
+		dumpHex(mMusicHeaderBlob);
+	}
 }
 
 void MusicDocument::dumpSequenceBlob() {
@@ -150,8 +168,9 @@ void MusicDocument::dumpSequenceBlob() {
 	dumpHex(mGeneratedSequenceBlob);
 }
 
-InstLoadResult MusicDocument::loadInstrumentSet() {
+InstLoadResult MusicDocument::loadInstrumentSet(int verboseLevel) {
 	if (!isInstrumentSetNameSet()) { return INSTLD_NOT_SET; }
+	mInsts.setVerboseLevel(verboseLevel);
 
 	const char* inst_dirname = mInstrumentSetName.c_str();
 	if (!isValidDirectory(inst_dirname)) {
@@ -183,7 +202,7 @@ void MusicDocument::generateInstrumentDataBinaries(unsigned int baseAddress) {
 }
 
 void MusicDocument::generateFqRegTable(double baseFq, int originOctave) {
-	RawFqList fq_ls = generateNotesFqTable(originOctave, 6);
+	RawFqList fq_ls = generateNotesFqTable(originOctave, 6, true);
 	FqFactorList r_ls = generateFqFactorTable(fq_ls, baseFq);
 	mFqRegTable = generateFqRegisterValueTable(r_ls);
 

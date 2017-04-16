@@ -18,7 +18,7 @@ public:
 	BRRPacker();
 	virtual ~BRRPacker();
 
-	void addBRR(const C700BRR* pBRR);
+	void addBRR(const C700BRR* pBRR, bool verbose);
 	void addDummyBlock();
 
 	int getAttackOffsetByName(const std::string& name) const;

@@ -14,14 +14,14 @@ C700BRR::~C700BRR() {
 	}
 }
 
-bool C700BRR::load(const std::string& path) {
+bool C700BRR::load(const std::string& path, bool verbose) {
 	if (mpBin) { return false; }
 
 	mpBin = new BinFile(path.c_str());
-	fprintf(stderr, "SZ: %d\n", mpBin->size());
+	if (verbose) { fprintf(stderr, "SZ: %d\n", mpBin->size()); }
 
 	mLoopPoint = readLoopPointData();
-	fprintf(stderr, "LP: %d\n", mLoopPoint);
+	if (verbose) { fprintf(stderr, "LP: %d\n", mLoopPoint); }
 
 	mBodySize = mpBin->size() - 2;
 

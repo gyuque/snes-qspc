@@ -1,4 +1,5 @@
 #include "MMLUtility.h"
+#include <regex>
 
 // Note Indices
 // ==============================================
@@ -137,6 +138,16 @@ std::string cleanStringLiteral(const std::string& original) {
 	return std::regex_replace(mid.c_str(), re2, "");
 }
 
+std::string getFilenameOnly(const std::string& rawPath) {
+	std::regex re("[\\\\/]?([^.]+)(\\..*)?$");
+	std::smatch m;
+
+	if (std::regex_search(rawPath, m, re)) {
+		return m[1].str();
+	}
+
+	return "";
+}
 
 void dumpHex(const ByteList& blob) {
 	size_t n = blob.size();

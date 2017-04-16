@@ -22,18 +22,20 @@ public:
 	void setTitle(const std::string& s) { mTitle = s; }
 	void setArtistName(const std::string& s) { mArtistName = s; }
 
+	void validateMetadata();
+
 	const std::string& getTitle() const { return mTitle; }
 	const std::string& getArtistName() const { return mArtistName; }
 	const std::string& getInstrumentSetName() const;
 
 	bool isInstrumentSetNameSet() const;
-	InstLoadResult loadInstrumentSet();
+	InstLoadResult loadInstrumentSet(int verboseLevel);
 	void generateInstrumentDataBinaries(unsigned int baseAddress);
 
 	class MusicTrack* appendTrack();
 	void calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo = false);
 
-	void generateSequenceImage();
+	void generateSequenceImage(bool bVerbose);
 	size_t countTracks() const;
 
 	void dumpSequenceBlob();
@@ -74,7 +76,7 @@ protected:
 	std::string mInstrumentSetName;
 	InstrumentSet mInsts;
 
-	void generateHeaderImage();
+	void generateHeaderImage(bool bVerbose);
 	void releaseAllTracks();
 	TrackPtrList mTrackPtrList;
 };

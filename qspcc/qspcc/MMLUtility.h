@@ -20,6 +20,7 @@ uint8_t generateCompressedVelocity(int v);
 uint8_t generateQVbits(int rawQ, int rawV);
 
 std::string cleanStringLiteral(const std::string& original);
+std::string getFilenameOnly(const std::string& rawPath);
 
 void dumpHex(const ByteList& blob);
 

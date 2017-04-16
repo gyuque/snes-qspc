@@ -49,11 +49,7 @@ static void _er(int eid, const char* s) {
 	sMsgMap[eid] = s;
 }
 
-bool ensureMessageRegistration() {
-	if (sMsgMap.size() > 0) {
-		return false;
-	}
-
+static void registerErrorMessages_JP() {
 	_er(MMLErrors::E_UNKNOWN_CHAR   , "認識できない文字があります（MMLで利用できない文字がないか、または利用できる文字であっても不適切な位置にないか確認してください）");
 	_er(MMLErrors::E_UNKNOWN_EXPR   , "認識できないトークン列があります（コマンドを伴わずに整数があるなど、正しくないトークンの並び方になっていないか確認してください）");
 	_er(MMLErrors::E_NESTED_TUP     , "連符を多重にすることはできません");
@@ -65,6 +61,21 @@ bool ensureMessageRegistration() {
 	_er(MMLErrors::E_INST_M_NOTFOUND, "音色セットのマニフェストをロードできません");
 	_er(MMLErrors::E_INST_M_BAD     , "音色セットのマニフェストにエラーがあります");
 	_er(MMLErrors::E_INST_B_NOTFOUND, "マニフェスト内で指定されているBRRファイルが見つかりません");
+	_er(MMLErrors::E_EMB_CAPACITY_EX, "データセクションの容量が足りません");
+
+
+	_er(MMLErrors::MSG_COMPILING    , "●コンパイル中: ");
+	_er(MMLErrors::MSG_EMBEDEXP     , "容量を超過すると ! マークが表示されます");
+	_er(MMLErrors::MSG_EXPORTING    , "出力しています...");
+	_er(MMLErrors::MSG_SUCCESSS     , "<正常に終了しました>");
+}
+
+bool ensureMessageRegistration() {
+	if (sMsgMap.size() > 0) {
+		return false;
+	}
+
+	registerErrorMessages_JP();
 
 	return true;
 }

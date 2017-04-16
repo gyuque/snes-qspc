@@ -3,6 +3,7 @@
 static void groupMacroDefTokens(MMLExprStruct& exprOut, MMLTokenizer* pSourceTokenizer, int startPos, int count, bool mark_macrodef);
 static void groupTokens(MMLExprStruct& exprOut, const MMLTokenList& srcTokenList, int startPos, int count);
 
+#define kNestMax 32
 
 MMLExpressionBuilder::MMLExpressionBuilder(MMLTokenizer* pSourceTokenizer) : mpErrorRecv(NULL), mVerboseLevel(0)
 {
@@ -150,7 +151,9 @@ void MMLExpressionBuilder::generateMacroExpandedTokenList(MacroDictionary& macro
 	mExpandedTokenLetters.clear();
 	generateTokenLetterList(mExpandedTokenLetters, mExpandedTokenList);
 
-	fprintf(stderr, "%s\n", mExpandedTokenLetters.c_str());
+	if (mVerboseLevel > 0) {
+		fprintf(stderr, "%s\n", mExpandedTokenLetters.c_str());
+	}
 }
 
 void MMLExpressionBuilder::generateTokenLetterList(std::string& outStr, const MMLTokenList& inList) {
@@ -169,6 +172,11 @@ void MMLExpressionBuilder::expandMacrosInTokenList(MMLTokenList& outList, const 
 		const MMLTokenStruct& tok = inList.at(i);
 
 		if (tok.type == TT_MAC_IDENT && !tok.is_macrodef) {
+			if (nestLevel >= kNestMax) {
+				raiseExpressionErrorWithToken(tok, MMLErrors::E_RECURSIVE_MACRO);
+				return;
+			}
+
 			const bool found = macroDic.exists(tok.rawStr);
 			if (found) {
 				const MacroDefinition& mdef = macroDic.referMacroDefinition(tok.rawStr);
