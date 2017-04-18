@@ -38,6 +38,7 @@ public:
 
 	virtual int countCodeBytes() const { return mCodeBytes;  }
 	virtual void rewriteTicks(DriverTick t) {}
+	virtual void applyDocumentGlobalConfiguration(const class MusicDocument* pDocument) {}
 	virtual void configureDocument(class MusicDocument* pDocument) {}
 
 	void raiseError(const char* relStr, int messageId);
@@ -232,7 +233,10 @@ public:
 
 	MC_PUBLIC_DECL
 	MC_CTXCHG_DECL
+
+	virtual void applyDocumentGlobalConfiguration(const class MusicDocument* pDocument);
 protected:
+	int mReverseFactor;
 	int mDelta;
 
 	MC_PROTECTED_DECL

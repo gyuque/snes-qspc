@@ -44,6 +44,8 @@ void registerMMLExpressionForm() {
 	rx_("Title"   , MX_TITLEDECL, "^`\"");
 	// #artist
 	rx_("Artist"  , MX_ARTISTDECL,"^A\"");
+	// #octrev
+	rx_("Octrev"  , MX_OCTREVDECL, "^8");
 
 	// Macro
 	rx_("MacroDef", MX_MACRODEF, "^M=[^;]*");

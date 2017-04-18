@@ -38,7 +38,8 @@ void registerMMlTokenTypeList() {
 	rt_('U' , "#using"  , TT_USING     , "^#[uU][sS][iI][nN][gG]");
 	rt_('`' , "#title"  , TT_TITLE     , "^#[tT][iI][tT][lL][eE]");
 	rt_('A' , "#artist" , TT_ARTIST    , "^#[aA][rR][tT][iI][sS][tT]");
-	rt_('_' , "(blank)" , TT_BLANK     , "^[\\t\\r\\n ]+");
+	rt_('8' , "#octrev" , TT_OCTREV    , "^#[oO][cC][ a-zA-Z]+");
+	rt_('_', "(blank)"  , TT_BLANK     , "^[\\t\\r\\n ]+");
 	rt_('"' , "StrLit"  , TT_STRLIT    , "^\"[^\"]*\"");
 	rt_('v' , "Velocity", TT_VELO_CMD  , "^v");
 	rt_('M' , "MacIdent", TT_MAC_IDENT , "^\\$[_a-zA-Z][_a-zA-Z0-9]*");

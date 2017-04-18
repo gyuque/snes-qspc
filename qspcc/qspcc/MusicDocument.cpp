@@ -4,6 +4,7 @@
 
 MusicDocument::MusicDocument()
 {
+	mOctaveReverseEnabled = false;
 	mTempo = 120;
 	mGeneratedTrackLength = 0;
 	mpMusicHeaderSource = new BytesSourceProxy(mMusicHeaderBlob);

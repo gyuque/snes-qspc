@@ -381,6 +381,7 @@ void MMLOctaveSetCommand::changeContext(ParamsContext& inoutContext, int current
 // ======= Octave shift < > =======
 MMLOctaveShiftCommand::MMLOctaveShiftCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression)
 {
+	mReverseFactor = 1;
 	mDelta = 1;
 	pickFromExpr(sourceExpression);
 }
@@ -396,11 +397,19 @@ void MMLOctaveShiftCommand::pickFromExpr(const MMLExprStruct& sourceExpression) 
 }
 
 void MMLOctaveShiftCommand::dump() {
-	fprintf(stderr, "<OCT %c>\n", (mDelta > 0) ? '+' : '-');
+	fprintf(stderr, "<OCT %c>\n", ( (mDelta * mReverseFactor) > 0) ? '+' : '-');
 }
 
 void MMLOctaveShiftCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
-	inoutContext.currentOctave += mDelta;
+	inoutContext.currentOctave += mDelta * mReverseFactor;
+}
+
+void MMLOctaveShiftCommand::applyDocumentGlobalConfiguration(const class MusicDocument* pDocument) {
+	if (pDocument) {
+		if (pDocument->getOctaveReverseEnabled()) {
+			mReverseFactor = -1;
+		}
+	}
 }
 
 // ====== Global repeat or Repeat out ======

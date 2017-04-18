@@ -42,6 +42,9 @@ public:
 
 	int mGeneratedTrackLength;
 
+	void setOctaveReverseEnabled(bool b) { mOctaveReverseEnabled = b; }
+	bool getOctaveReverseEnabled() const { return mOctaveReverseEnabled; }
+
 	class BytesSourceProxy* referMusicHeaderSource() { return mpMusicHeaderSource; }
 	class BytesSourceProxy* referFqTableBytesSource() { return mpFqTableSource; }
 	class BytesSourceProxy* referSequenceBytesSource() { return mpSeqSource; }
@@ -49,6 +52,7 @@ public:
 	class BytesSourceProxy* referBRRDirBytesSource() { return mpBRRDirSource; }
 	class BytesSourceProxy* referBRRBodyBytesSource() { return mpBRRBlockSource; }
 protected:
+	bool mOctaveReverseEnabled;
 	unsigned int mTempo;
 
 	// FqTable

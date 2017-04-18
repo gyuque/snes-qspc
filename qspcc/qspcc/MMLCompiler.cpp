@@ -155,6 +155,7 @@ void MMLCompiler::generateCommands() {
 			if (pCmd) {
 				pCmd->setVerbose(mVerboseLevel > 0);
 				pCmd->setErrorReceiver(this);
+				pCmd->applyDocumentGlobalConfiguration(mpLastDocument);
 				mCommandPtrList.push_back(pCmd);
 			}
 

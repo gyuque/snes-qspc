@@ -5,5 +5,6 @@
 
 void doDocumentTest(Embedder* pEmbedder);
 void doFrequencyTableTest();
+void doSPCExporterTest();
 
 #endif

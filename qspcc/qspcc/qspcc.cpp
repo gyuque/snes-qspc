@@ -5,6 +5,7 @@
 #include "GlobalConfig.h"
 #include "Embedder.h"
 #include "ROMEmbedder.h"
+#include "spcfile/SPCExporter.h"
 #include "CommandOptions.h"
 #include "tester/testers.h"
 #include "win32/pwd.h"
@@ -31,6 +32,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 //doDocumentTest(&embd);
 //doFrequencyTableTest();
+//	doSPCExporterTest(); return 0;
 //return 0; //
 
 	// Read command options
@@ -130,6 +132,13 @@ int _tmain(int argc, _TCHAR* argv[])
 			const std::string nameOnly = getFilenameOnly(pCompiler->getSourceFileName());
 			const std::string spcFN = nameOnly + ".spc";
 			std::cerr << kStrExporting << " SPC file -> " << spcFN << std::endl;
+
+			SPCExporter spcx;
+			spcx.setProgramCounter( embd.referConfig().getProgramOrigin() );
+			spcx.setTitle( pDoc->getTitle() );
+			spcx.setComposer( pDoc->getArtistName() );
+			spcx.writeDriverImage( embd.referBin(), embd.referConfig().getProgramOrigin() );
+			spcx.exportToFile( spcFN.c_str() );
 		}
 
 		if (embd.checkAllSuccess()) {
@@ -230,13 +239,13 @@ bool globalSetup(Embedder& embd) {
 }
 
 void showUsage() {
-	fprintf(stderr, "qSPC version 1.9.0\n");
+	fprintf(stderr, "qSPC MML compiler version 1.9.0\n");
 	if (MMLErrors::getCurrentLanguage() == MSGLNG_JAPANESE) {
 		fprintf(stderr, "この環境ではエラーメッセージが日本語で表示されます.\n");
 	}
 	fprintf(stderr, "------------------------------------------------------------------------\n");
 	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  qspc [options] <input mml 1> <input mml 2> <input mml 3>...\n\n");
+	fprintf(stderr, "  qspc [options] <input mml 1> <input mml 2> <input mml 3> <input mml 4>\n\n");
 	fprintf(stderr, "All options:\n");
 	fprintf(stderr, "  -bin: Generate driver image (raw) binary\n");
 	fprintf(stderr, "  -rom: Generate SNES ROM file only\n");

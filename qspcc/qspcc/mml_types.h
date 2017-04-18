@@ -76,6 +76,7 @@ typedef enum _MMLExpressionType {
 	MX_USINGDECL,
 	MX_TITLEDECL,
 	MX_ARTISTDECL,
+	MX_OCTREVDECL,
 	MX_MACRODEF,
 	MX_MACROUSE
 } MMLExpressionType;

@@ -154,6 +154,8 @@ bool ROMEmbedder::updateChecksum() {
 	const uint16_t s = mpSourceBin->calcChecksum();
 	mpSourceBin->writeUint16LE(kChecksumC_Addr, sum_comp(s));
 	mpSourceBin->writeUint16LE(kChecksum_Addr, s);
+
+	return true;
 }
 
 // Mapping file loader

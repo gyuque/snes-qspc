@@ -6,7 +6,9 @@ BinFile::BinFile(const char* filename, bool verbose_mode)
 {
 	mFileSize = 0;
 	mContent = NULL;
-	load(filename);
+	if (filename) {
+		load(filename);
+	}
 }
 
 
@@ -16,6 +18,16 @@ BinFile::~BinFile()
 		delete[] mContent;
 		mContent = NULL;
 	}
+}
+
+void BinFile::blank(size_t size) {
+	if (mContent) {
+		return;
+	}
+
+	mFileSize = size;
+	mContent = new uint8_t[mFileSize];
+	memset(mContent, 0, size);
 }
 
 void BinFile::load(const char* filename) {
@@ -46,6 +58,19 @@ void BinFile::load(const char* filename) {
 void BinFile::writeByte(unsigned int position, uint8_t val) {
 	if (position < mFileSize) {
 		mContent[position] = val;
+	}
+}
+
+void BinFile::writeByteArray(unsigned int position, const void* pValues, size_t count) {
+	for (size_t i = 0; i < count; ++i) {
+		writeByte(position+i, ((const uint8_t*)pValues)[i]);
+	}
+}
+
+void BinFile::writeBinFile(unsigned int position, const class BinFile* pSource) {
+	const size_t len = pSource->size();
+	for (size_t i = 0; i < len; ++i) {
+		writeByte(position + i, pSource->at(i));
 	}
 }
 

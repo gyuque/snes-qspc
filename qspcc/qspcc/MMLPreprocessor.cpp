@@ -24,6 +24,10 @@ void MMLPreprocessor::processExpression(const MMLExprStruct& expr) {
 		process_Artist(expr);
 		break;
 
+	case MX_OCTREVDECL:
+		process_OctaveReverse(expr);
+		break;
+
 	default:
 		// ignore
 		break;
@@ -57,5 +61,11 @@ void MMLPreprocessor::process_Artist(const MMLExprStruct& expr) {
 	// fprintf(stderr, "A:: %s\n", s.c_str());
 	if (mpDocument) {
 		mpDocument->setArtistName(s);
+	}
+}
+
+void MMLPreprocessor::process_OctaveReverse(const MMLExprStruct& expr) {
+	if (mpDocument) {
+		mpDocument->setOctaveReverseEnabled(true);
 	}
 }

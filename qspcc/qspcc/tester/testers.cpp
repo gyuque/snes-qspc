@@ -2,6 +2,7 @@
 
 #include "../MusicDocument.h"
 #include "../FrequencyTable.h"
+#include "../spcfile/SPCExporter.h"
 
 void doDocumentTest(Embedder* pEmbedder) {
 	MusicDocument doc;
@@ -31,4 +32,9 @@ void doFrequencyTableTest() {
 
 	FqRegisterValueList regval_list = generateFqRegisterValueTable(r_ls);
 	dumpFqRegisterValueTable(fq_ls, regval_list);
+}
+
+void doSPCExporterTest() {
+	SPCExporter ex;
+	ex.exportToFile("_TestOut-SPC.bin");
 }
