@@ -6,9 +6,11 @@ MusicDocument::MusicDocument()
 {
 	mOctaveReverseEnabled = false;
 	mTempo = 120;
-	mGeneratedTrackLength = 0;
+//	mGeneratedTrackLength = 0;
+	mRecommendedDuration = 15;
 	mpMusicHeaderSource = new BytesSourceProxy(mMusicHeaderBlob);
 	mpSeqSource = new BytesSourceProxy(mGeneratedSequenceBlob);
+	mpSeqDirSource = new BytesSourceProxy(mSeqDirBlob);
 	mpInstDirSource = new BytesSourceProxy(mInstDirBlob);
 	mpBRRDirSource = new BytesSourceProxy(mBRRDirBlob);
 	mpBRRBlockSource = new BytesSourceProxy(mBRRBlockBlob);
@@ -28,6 +30,11 @@ MusicDocument::~MusicDocument()
 	if (mpSeqSource) {
 		delete mpSeqSource;
 		mpSeqSource = nullptr;
+	}
+
+	if (mpSeqDirSource) {
+		delete mpSeqDirSource;
+		mpSeqDirSource = nullptr;
 	}
 
 	if (mpInstDirSource) {
@@ -73,6 +80,11 @@ MusicTrack* MusicDocument::appendTrack() {
 	return t;
 }
 
+MusicTrack* MusicDocument::referTrack(unsigned int i) {
+	if (i >= mTrackPtrList.size()) { return nullptr; }
+	return mTrackPtrList.at(i);
+}
+
 void MusicDocument::validateMetadata() {
 	const std::string& t = getTitle();
 	const std::string& a = getArtistName();
@@ -97,7 +109,7 @@ const std::string& MusicDocument::getInstrumentSetName() const {
 }
 
 void MusicDocument::calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo) {
-	int max_size = 0;
+	int totalSize = 0;
 	const size_t nTracks = mTrackPtrList.size();
 	for (size_t i = 0; i < nTracks; ++i) {
 		MusicTrack* t = mTrackPtrList[i];
@@ -107,43 +119,80 @@ void MusicDocument::calcDataSize(int* poutTrackBufferLength, bool dumpDebugInfo)
 			fprintf(stderr, "T%d: %d bytes\n", i, sz);
 		}
 
-		if (sz > max_size) {
-			max_size = sz;
-		}
+		totalSize += sz;
 	}
 
-	const int aligned_size = ((max_size / 256) + 1) * 256;
 
 	if (poutTrackBufferLength) {
-		*poutTrackBufferLength = aligned_size;
+		*poutTrackBufferLength = totalSize;
 	}
 
 	if (dumpDebugInfo) {
-		fprintf(stderr, "Max size per track: %d\n", max_size);
-		fprintf(stderr, "Aligned track size: %d\n", aligned_size);
-		fprintf(stderr, "Entire size: %d\n", aligned_size * nTracks);
+		fprintf(stderr, "Entire size: %d\n", totalSize);
 	}
 }
 
-void MusicDocument::generateSequenceImage(bool bVerbose) {
+void MusicDocument::generateSequenceImage(bool bVerbose, bool pausedMode) {
 	mGeneratedSequenceBlob.clear();
 
-	int trackBufferLen;
-	calcDataSize(&trackBufferLen, false);
-	mGeneratedTrackLength = trackBufferLen;
+	//int trackBufferLen;
+	//calcDataSize(&trackBufferLen, false);
+	//mGeneratedTrackLength = trackBufferLen;
 
+	int ofs = 0;
 	const int nTracks = (int)(countTracks());
 	for (int i = 0; i < nTracks; ++i) {
 
 		MusicTrack* tr = mTrackPtrList[i];
 
-		for (int j = 0; j < trackBufferLen; ++j) {
+		int t_size = tr->size();
+		for (int j = 0; j < t_size; ++j) {
 			mGeneratedSequenceBlob.push_back( tr->at(j) );
 		}
 
+
+		mSeqDirBlob.push_back( (uint8_t)(ofs & 0xFF) );
+		mSeqDirBlob.push_back((uint8_t)((ofs >> 8) & 0xFF));
+
+		ofs += t_size;
 	}
 
-	generateHeaderImage(bVerbose);
+	generateSESequenceImages(ofs, bVerbose);
+
+	generateHeaderImage(bVerbose, pausedMode);
+}
+
+void MusicDocument::generateSESequenceImages(int beginOffset, bool bVerbose) {
+	int ofs = beginOffset;
+
+	size_t n = mSETracksRefList.size();
+	if (n) {
+		fprintf(stderr, "SE tracks enabled: %d\n", n);
+
+		// 8ƒgƒ‰ƒbƒN(16B)‚É–ž‚½‚È‚¢•ª‚ð–„‚ß‚é
+		for (; mSeqDirBlob.size() < 16;) {
+			mSeqDirBlob.push_back(0xff);
+		}
+	}
+
+	for (size_t i = 0; i < n; ++i) {
+		MusicTrack* pT = mSETracksRefList.at(i);
+		int t_size = pT->size();
+		for (int j = 0; j < t_size; ++j) {
+			mGeneratedSequenceBlob.push_back(pT->at(j));
+		}
+
+		mSeqDirBlob.push_back((uint8_t)(ofs & 0xFF));
+		mSeqDirBlob.push_back((uint8_t)((ofs >> 8) & 0xFF));
+
+		ofs += t_size;
+	}
+
+	if (n) {
+		for (; mSeqDirBlob.size() < 256;) {
+			mSeqDirBlob.push_back(0xff);
+		}
+	}
 }
 
 static uint8_t calcTimerIntervalForTempo(unsigned int tempo) {
@@ -151,11 +200,14 @@ static uint8_t calcTimerIntervalForTempo(unsigned int tempo) {
 	return (uint8_t)(f / (48.0 * 0.125) + 0.49);
 }
 
-void MusicDocument::generateHeaderImage(bool bVerbose) {
+void MusicDocument::generateHeaderImage(bool bVerbose, bool pausedMode) {
 	mMusicHeaderBlob.clear();
 	mMusicHeaderBlob.push_back( countTracks() );
-	mMusicHeaderBlob.push_back( mGeneratedTrackLength >> 8 );
+	mMusicHeaderBlob.push_back( mSETracksRefList.size() );
 	mMusicHeaderBlob.push_back( calcTimerIntervalForTempo(mTempo) );
+
+	uint8_t pause_flag = pausedMode ? 1 : 0;
+	mMusicHeaderBlob.push_back(pause_flag);
 
 	if (bVerbose) {
 		fputs("SeqHeader= ", stderr);
@@ -163,10 +215,22 @@ void MusicDocument::generateHeaderImage(bool bVerbose) {
 	}
 }
 
+void MusicDocument::writeQuickLoadSizeHeader(unsigned int val) {
+	static const size_t pos = 4;
+	if (mMusicHeaderBlob.size() != pos) {
+		return;
+	}
+
+	mMusicHeaderBlob.push_back( val & 0x00FF ); // LO
+	mMusicHeaderBlob.push_back( (val >> 8) & 0x00FF); // HI
+}
+
 void MusicDocument::dumpSequenceBlob() {
 	fprintf(stderr, "Num of tracks: %d\n", countTracks());
-	fprintf(stderr, "Length of track: %d\n", mGeneratedTrackLength);
+//	fprintf(stderr, "Length of track: %d\n", mGeneratedTrackLength);
 	dumpHex(mGeneratedSequenceBlob);
+	fprintf(stderr, "----------------------------\nOffsets:\n");
+	dumpHex(mSeqDirBlob);
 }
 
 InstLoadResult MusicDocument::loadInstrumentSet(int verboseLevel) {
@@ -221,7 +285,17 @@ void MusicDocument::generateFqRegTableFromInsts() {
 	generateFqRegTable( mInsts.getBaseEq(), mInsts.getOriginOctave() );
 }
 
+void MusicDocument::addSETrackReference(class MusicDocument* pRefDoc) {
+	size_t n = pRefDoc->countTracks();
+	for (size_t i = 0; i < n; ++i) {
+		mSETracksRefList.push_back( pRefDoc->referTrack(i) );
+	}
 
+}
+
+unsigned int MusicDocument::getBrrFixPoint() const {
+	return mInsts.getFixPoint();
+}
 
 
 MusicTrack::MusicTrack() {

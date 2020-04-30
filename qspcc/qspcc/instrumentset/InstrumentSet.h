@@ -19,6 +19,8 @@ typedef struct _InstDef {
 	std::string filename;
 	int srcn;
 	InstADSR adsr;
+	unsigned int fixPoint;
+	int priority;
 } InstDef;
 
 typedef struct _WavSrc {
@@ -30,6 +32,12 @@ typedef struct _WavSrc {
 typedef std::vector<C700BRR*> BRRPtrList;
 typedef std::vector<InstDef> InstDefList;
 typedef std::vector<WavSrc> SrcList;
+
+typedef enum {
+	INSTS_OK = 0,
+	INSTS_ERR_BADDEF = -8,
+	INSTS_ERR_DUPFIX = -9
+} InstsResult;
 
 class InstrumentSet
 {
@@ -46,12 +54,14 @@ public:
 	static uint8_t makeSRregister(const InstADSR& inADSR);
 
 	void dumpPackedBRR();
-	void exportBRR(ByteList& outBytes);
+	void exportBRR(ByteList& outBytes) const;
 	void exportPackedSrcTable(ByteList& outBytes, unsigned int baseAddr);
 	void exportPackedInstTable(ByteList& outBytes);
 
 	float getBaseEq() const { return mBaseFq; }
 	int getOriginOctave() const { return mOriginOctave; }
+
+	unsigned int getFixPoint() const { return mFirstFixPoint; }
 protected:
 	int mVerboseLevel;
 
@@ -59,15 +69,16 @@ protected:
 	int mOriginOctave;
 	InstDefList mInstList;
 	unsigned int mMaxInstIndex;
+	unsigned int mFirstFixPoint;
 
 	unsigned int findMaxInst(const picojson::object& parentObj);
-	void readInstDefs(picojson::object& parentObj);
+	InstsResult readInstDefs(picojson::object& parentObj);
 	static bool isInstDefValid(const picojson::object& def);
 
-	void addInst(const picojson::object& src);
+	InstsResult addInst(const picojson::object& src);
 	void addDummyInst();
 	bool loadBRRBodies(const std::string& baseDir);
-	bool loadBRRIf(const std::string& name, const std::string& path);
+	bool loadBRRIf(const std::string& name, const std::string& path, unsigned int fixPoint);
 	void releaseAllBRRs();
 
 	const WavSrc* findSrcWithName(const std::string& name, int* pOutIndex = NULL) const;

@@ -17,18 +17,22 @@ public:
 	MMLCompiler();
 	virtual ~MMLCompiler();
 
-	bool compile(std::string filename);
+	bool compile(std::string filename, MMLCompiler* prevCompiler);
 	void dumpAllErrors();
 	void setVerboseLevel(int lv);
 
 	MusicDocument* referLastDocument() { return mpLastDocument; }
+	const MusicDocument* constLastDocument() const { return mpLastDocument; }
 	const std::string& getSourceFileName() const { return mCurrentFilename; }
+
+	bool checkCanShareDriver(const class MMLCompiler& theOther, size_t mutableZoneSize, const EmbedderConfig& eConfig);
 protected:
 	void releaseDocumentIf();
 	bool shouldAbort() const;
 
 	void clearCommands();
 	void preprocess();
+	void usePrevInstsIf(class MMLCompiler* pPrevCompiler);
 	void generateCommands();
 	void appendTrackFooter();
 	void applyContextDependentParams();

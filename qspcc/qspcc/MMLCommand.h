@@ -47,6 +47,7 @@ public:
 	}
 
 	void setVerbose(bool v);
+	virtual bool isNote() const { return false; }
 
 	MC_PUBLIC_DECL
 	MC_CTXCHG_DECL
@@ -93,6 +94,7 @@ typedef struct _ParamsContext {
 	int q, v;
 	int track;
 	int nShift;
+	int vShift;
 	IndexStack localRepeatPointStack;
 	IndexStack tupletPointStack;
 	bool groupingNeeded;
@@ -105,6 +107,7 @@ typedef struct _ParamsContext {
 		defaultLength.dots = 0;
 		currentOctave = 3;
 		nShift = 0;
+		vShift = 0;
 		track = 0;
 		groupingNeeded = false;
 		q = MML_QMAX;
@@ -151,6 +154,20 @@ protected:
 	MC_PROTECTED_DECL
 };
 
+// ======= vs command(Velocity Shift) vs[n] =======
+class MMLVelocityShiftCommand : public MMLCommand {
+public:
+	MMLVelocityShiftCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLVelocityShiftCommand();
+
+	MC_PUBLIC_DECL
+	MC_CTXCHG_DECL
+protected:
+	int mSpecifiedValue;
+
+	MC_PROTECTED_DECL
+};
+
 // ============= @p command (panpot) =============
 class MMLPanCommand : public MMLIntParamCommand {
 public:
@@ -186,6 +203,7 @@ public:
 	MC_GETCODE_DECL
 	MC_REWRITETICKS_IMPL
 
+	virtual bool isNote() const { return true; }
 	static bool findTieToken(const MMLExprStruct& expr);
 protected:
 	int calcNoteBytes();
@@ -339,6 +357,8 @@ protected:
 	int mBeginCommandPosition;
 	MMLCommandPtrList mInnerList;
 
+	int countValidInnerCommands() const;
+
 	MC_PROTECTED_DECL
 };
 
@@ -367,6 +387,22 @@ public:
 protected:
 	MC_PROTECTED_DECL
 };
+
+// ======= Stop BGM command =======
+// BGM‚ðŽ~‚ß‚é(“ÁŽêSE—p)
+
+class MMLStopBGMCommand : public MMLCommand {
+public:
+	MMLStopBGMCommand(const MMLExprStruct& sourceExpression);
+	virtual ~MMLStopBGMCommand();
+
+	MC_PUBLIC_DECL
+	MC_CTXCHG_DECL
+	MC_GETCODE_DECL
+protected:
+	MC_PROTECTED_DECL
+};
+
 
 #undef MC_PUBLIC_DECL
 #undef MC_PROTECTED_DECL

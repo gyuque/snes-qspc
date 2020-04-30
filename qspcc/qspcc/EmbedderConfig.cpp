@@ -7,6 +7,7 @@
 #define kProgramOriginName "ProgramOrigin"
 #define kMusicHeaderName   "MusicHeaderOrigin"
 #define kSeqOriginName     "MusicSeqOrigin"
+#define kSeqDirOriginName "SeqDirOrigin"
 #define kInstDirOriginName "InstDirOrigin"
 #define kBRRDirOriginName  "BRRDirOrigin"
 #define kFqTableOriginName "FqTableOrigin"
@@ -16,11 +17,12 @@ EmbedderConfig::EmbedderConfig() :
 	mProgramOrigin(0),
 	mMusicHeaderEmbedPosition(0),
 	mSequenceEmbedPosition(0),
+	mSeqDirEmbedPosition(0),
 	mInstDirEmbedPosition(0),
 	mBRRDirEmbedPosition(0),
 	mFqTableEmbedPosition(0),
 	mBRRBodyEmbedPosition(0),
-	mReAddressConstant("constant +([_a-zA-Z]+Origin|TailPadding)\\(\\$ *([0-9a-fA-F]+) *\\)")
+	mReAddressConstant("constant +([_a-zA-Z]+Origin|TailPadding)\\( *\\$ *([0-9a-fA-F]+) *\\)")
 {
 }
 
@@ -64,6 +66,7 @@ void EmbedderConfig::parseLine(const std::string& ln) {
 		pickAddressWithName(mProgramOrigin, addr, decl_name, kProgramOriginName);
 		pickAddressWithName(mMusicHeaderEmbedPosition, addr, decl_name, kMusicHeaderName);
 		pickAddressWithName(mSequenceEmbedPosition, addr, decl_name, kSeqOriginName);
+		pickAddressWithName(mSeqDirEmbedPosition, addr, decl_name, kSeqDirOriginName);
 		pickAddressWithName(mInstDirEmbedPosition, addr, decl_name, kInstDirOriginName);
 		pickAddressWithName(mBRRDirEmbedPosition, addr, decl_name, kBRRDirOriginName);
 		pickAddressWithName(mFqTableEmbedPosition, addr, decl_name, kFqTableOriginName);
@@ -100,6 +103,10 @@ int EmbedderConfig::calcMusicHeaderCapacity() const {
 
 int EmbedderConfig::calcSequenceCapacity() const {
 	return countSizeToNext(mSequenceEmbedPosition);
+}
+
+int EmbedderConfig::calcSeqDirCapacity() const {
+	return countSizeToNext(mSeqDirEmbedPosition);
 }
 
 int EmbedderConfig::calcInstDirCapacity() const {

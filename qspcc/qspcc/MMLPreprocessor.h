@@ -17,6 +17,10 @@ protected:
 	void process_Using(const MMLExprStruct& expr);
 	void process_Title(const MMLExprStruct& expr);
 	void process_Artist(const MMLExprStruct& expr);
+	void process_Duration(const MMLExprStruct& expr);
+	void process_Comment(const MMLExprStruct& expr);
+	void process_Coder(const MMLExprStruct& expr);
+	void process_GameTitle(const MMLExprStruct& expr);
 };
 
 

@@ -25,12 +25,17 @@ public:
 	static const int E_INST_M_NOTFOUND = 82;
 	static const int E_INST_M_BAD      = 83;
 	static const int E_INST_B_NOTFOUND = 84;
+	static const int E_INST_MULTI_FIX  = 85;
+	static const int E_INST_EXCEED_FIX = 86;
+	static const int E_INST_BAD_FIXBRR = 87;
 	static const int E_EMB_CAPACITY_EX = 90;
+	static const int E_TOO_MANY_FILES  = 92;
 
-	static const int MSG_COMPILING = 101;
-	static const int MSG_EMBEDEXP  = 102;
-	static const int MSG_EXPORTING = 103;
-	static const int MSG_SUCCESSS  = 110;
+	static const int MSG_COMPILING  = 101;
+	static const int MSG_EMBEDEXP   = 102;
+	static const int MSG_EXPORTING  = 103;
+	static const int MSG_FIXENABLED = 104;
+	static const int MSG_SUCCESSS   = 110;
 
 protected:
 	MMLErrors();

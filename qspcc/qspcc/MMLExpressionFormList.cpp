@@ -14,9 +14,13 @@ static void rx_(const char* name, MMLExpressionType type, const char* reLit);
 void registerMMLExpressionForm() {
 	if (sExpFormList.size() > 0) { return; }
 
+	// remark
+	rx_("RemarkBlock", MX_REMARK, "^\\*");
+
 	rx_("QuantSet", MX_QSET   , "^QI");
 	rx_("Tempo"   , MX_TEMPO  , "^TI");
 	rx_("NShift"  , MX_NSHIFT , "^s[Ii]");
+	rx_("VShift"  , MX_VSHIFT , "^S[Ii]");
 	rx_("OctSet"  , MX_OCTSET , "^OI");
 	rx_("LenSet"  , MX_LENSET , "^LId?");
 	rx_("Note"    , MX_NOTE   , "^NI?d?&?");
@@ -26,6 +30,7 @@ void registerMMLExpressionForm() {
 	rx_("VeloSet" , MX_VELOSET, "^vI");
 	rx_("InstChg" , MX_INSTCHG, "^@I");
 	rx_("Panpot"  , MX_PANPOT , "^pI");
+	rx_("StopBGM" , MX_STOPBGM, "^x");
 
 	// combined commands(tuplet notes)
 	rx_("CmbStart", MX_CMB_START, "^\\{");
@@ -46,6 +51,14 @@ void registerMMLExpressionForm() {
 	rx_("Artist"  , MX_ARTISTDECL,"^A\"");
 	// #octrev
 	rx_("Octrev"  , MX_OCTREVDECL, "^8");
+	// #duration
+	rx_("Duration", MX_DURATIONDECL, "^DI");
+	// #comment
+	rx_("Comment" , MX_COMMENT, "^C\"");
+	// #coding
+	rx_("Coding"  , MX_CODERDECL, "^c\"");
+	// #coding
+	rx_("GameTitle", MX_GAMETITLEDECL, "^G\"");
 
 	// Macro
 	rx_("MacroDef", MX_MACRODEF, "^M=[^;]*");

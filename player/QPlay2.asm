@@ -25,6 +25,10 @@
 	jsr initSystemGenericStatuses
 	jsr initVideoForGame
 	jsr disableNMI
+
+	; Read QL header
+	lda f:SongMetadataHeader+2
+	sta gQuickLoadSize
 	
 	; Load initial sound
 	stz gSelectedIndex
@@ -63,6 +67,8 @@
 			
 			ldsta gQuickLoadOK,#$FF
 		skip_spc_load:
+	
+		jsr processSETriggers
 	
 		nop
 		jmp begin_loop
@@ -129,7 +135,7 @@
 .a16
 .i16
 	pha
-	
+
 	lda f:SongMetadataHeader
 	and gQuickLoadOK
 	bne return_yes
@@ -296,13 +302,15 @@ SongMetadataList:
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 
 	;      0123456789ABCDEF
-	.byte "Carrying You"
+	.byte $00,$00
+	.byte "rrying You"
 	.byte                  $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 
 	;      0123456789ABCDEF
-	.byte "Joe Hisaishi"
+	.byte $00,$00
+	.byte "e Hisaishi"
 	.byte                  $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
@@ -323,7 +331,7 @@ BGMapAsset:
 
 ; STRING ASSETS
 StrTitleDisp:
-	.byte "    qSPC Player Version 1.9"
+	.byte "    qSPC Player Version 2.1"
 	.byte $00
 StrSingleMode:
 	.byte "SINGLE  MODE"

@@ -180,6 +180,9 @@ MMLCommand* createMMLCommandFromExpr(const MMLExprStruct& sourceExpression) {
 	case MX_NSHIFT:
 		cmd_instance(MMLNoteShiftCommand);
 
+	case MX_VSHIFT:
+		cmd_instance(MMLVelocityShiftCommand);
+
 	case MX_NOTE:
 		cmd_instance(MMLNoteCommand);
 
@@ -222,6 +225,9 @@ MMLCommand* createMMLCommandFromExpr(const MMLExprStruct& sourceExpression) {
 
 	case MX_MACRODEF:
 		cmd_instance(MMLMacroDefPseudoCommand);
+
+	case MX_STOPBGM:
+		cmd_instance(MMLStopBGMCommand);
 
 	default:
 		return NULL;
@@ -294,6 +300,27 @@ void MMLNoteShiftCommand::changeContext(ParamsContext& inoutContext, int current
 	inoutContext.nShift = mSpecifiedValue;
 }
 
+// ======= vs command(Velocity Shift) vs[n] =======
+MMLVelocityShiftCommand::MMLVelocityShiftCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression) {
+	mSpecifiedValue = 0;
+	pickFromExpr(sourceExpression);
+}
+
+MMLVelocityShiftCommand::~MMLVelocityShiftCommand() {
+}
+
+void MMLVelocityShiftCommand::dump() {
+	fprintf(stderr, "(vs %d)\n", mSpecifiedValue);
+}
+
+void MMLVelocityShiftCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {
+	pickSimpleInt(mSpecifiedValue, sourceExpression);
+}
+
+void MMLVelocityShiftCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
+	inoutContext.vShift = mSpecifiedValue;
+}
+
 // ============= @p command (panpot) =============
 MMLPanCommand::MMLPanCommand(const MMLExprStruct& sourceExpression) : MMLIntParamCommand(sourceExpression, PANPOT_MID, "Pan") {
 	setCodeBytes(2);
@@ -327,7 +354,14 @@ MMLVelocityChangeCommand::~MMLVelocityChangeCommand() {
 }
 
 void MMLVelocityChangeCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
-	inoutContext.v = mSpecifiedValue;
+	int v = mSpecifiedValue + inoutContext.vShift;
+	if (v < 0) {
+		v = 0;
+	} else if (v > MML_VMAX) {
+		v = MML_VMAX;
+	}
+
+	inoutContext.v = v;
 }
 
 
@@ -677,19 +711,32 @@ void MMLTupletEndCommand::processGrouping(const struct _ParamsContext& inContext
 	const bool success = makeGroupedCommandList(mInnerList, commandPtrList, mBeginCommandPosition, currentCommandIndex, mVerbose);
 
 	if (success) {
-		const int n = (int)mInnerList.size();
-		DriverTick tupTick = mTicks / n;
+		const int nValid = countValidInnerCommands();
+		DriverTick tupTick = mTicks / nValid;
+
+		const int nAllInner = (int)mInnerList.size();
 		if (mVerbose) {
-			fprintf(stderr, "  tuplet ticks=%d\n", tupTick);
+			fprintf(stderr, "  tuplet ticks=%d (%d/%d) inner(all)=%d\n", tupTick, mTicks, nValid, nAllInner);
 		}
 
 		// rewrite
-		for (int i = 0; i < n; ++i) {
+		for (int i = 0; i < nAllInner; ++i) {
 			MMLCommand* p = mInnerList[i];
 			p->rewriteTicks(tupTick);
 		}
 	}
 }
+
+int MMLTupletEndCommand::countValidInnerCommands() const {
+	int sum = 0;
+	for (const auto& item : mInnerList) {
+		if (item->isNote()) {
+			++sum;
+		}
+	}
+	return sum;
+}
+
 
 // ======= Macro definition pseudo command =======
 
@@ -726,3 +773,27 @@ void MMLTerminatorPseudoCommand::dump() {
 }
 
 void MMLTerminatorPseudoCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {}
+
+// ======= Stop BGM command =======
+// BGM‚ðŽ~‚ß‚é(“ÁŽêSE—p)
+
+MMLStopBGMCommand::MMLStopBGMCommand(const MMLExprStruct& sourceExpression) : MMLCommand(sourceExpression) {
+	setCodeBytes(1);
+}
+
+MMLStopBGMCommand::~MMLStopBGMCommand() {
+}
+
+void MMLStopBGMCommand::changeContext(ParamsContext& inoutContext, int currentCommandIndex) {
+}
+
+void MMLStopBGMCommand::dump() {
+	fprintf(stderr, "(stop BGM)\n");
+}
+
+void MMLStopBGMCommand::pickFromExpr(const MMLExprStruct& sourceExpression) {}
+
+#define kStopBGMCommandByte  0xEE
+uint8_t MMLStopBGMCommand::getCode(int index) {
+	return kStopBGMCommandByte;
+}

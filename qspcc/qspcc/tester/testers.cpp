@@ -14,13 +14,13 @@ void doDocumentTest(Embedder* pEmbedder) {
 		t->addByte(0x7F);
 	}
 
-	doc.generateSequenceImage(true);
+	doc.generateSequenceImage(true, false);
 	doc.dumpSequenceBlob();
 
 	BytesSourceProxy* pSeqSrc = doc.referSequenceBytesSource();
 	fprintf(stderr, "<%d> %02X %02X\n", pSeqSrc->esGetSize(), pSeqSrc->esGetAt(256), pSeqSrc->esGetAt(257));
 
-	pEmbedder->embed(true, nullptr, nullptr, pSeqSrc, nullptr, nullptr, nullptr);
+	pEmbedder->embed(true, false, nullptr, nullptr, pSeqSrc, nullptr, nullptr, nullptr, nullptr);
 //	pEmbedder->exportToFile("test-out.bin");
 }
 

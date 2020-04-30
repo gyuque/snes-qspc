@@ -33,18 +33,22 @@ public:
 	bool loadSourceBin(const char* filename);
 	bool loadLocationConfig(const char* filename);
 	void dumpConfig();
-	bool exportToFile(const char* filename, const char* hi_filename);
 
-	void embed(bool bVerbose,
+	bool exportToFile(const char* filename, const char* hi_filename);
+	bool exportToFileHalf(const char* filename);
+	int getQuickLoadSize() const;
+
+	void embed(bool bVerbose, bool debugOut,
 		IEmbedderSource* pMusicHeaderSource,
 		IEmbedderSource* pFqTableSource,
 		IEmbedderSource* pSeqSource,
 		IEmbedderSource* pInstDirSource,
 		IEmbedderSource* pBRRDirSource,
-		IEmbedderSource* pBRRBodySource
+		IEmbedderSource* pBRRBodySource,
+		IEmbedderSource* pSeqDirSource
 	);
 
-	void embedFromSource(IEmbedderSource* pSource, unsigned int origin, unsigned int capacity, const std::string& chunkName);
+	void embedFromSource(IEmbedderSource* pSource, unsigned int origin, unsigned int capacity, const std::string& chunkName, bool debugOut);
 	const EmbedderConfig& referConfig() const { return mConfig; }
 	const BinFile* referBin() const { return mpSourceBin; }
 

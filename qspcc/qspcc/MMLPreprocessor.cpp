@@ -28,6 +28,22 @@ void MMLPreprocessor::processExpression(const MMLExprStruct& expr) {
 		process_OctaveReverse(expr);
 		break;
 
+	case MX_DURATIONDECL:
+		process_Duration(expr);
+		break;
+
+	case MX_COMMENT:
+		process_Comment(expr);
+		break;
+
+	case MX_CODERDECL:
+		process_Coder(expr);
+		break;
+
+	case MX_GAMETITLEDECL:
+		process_GameTitle(expr);
+		break;
+
 	default:
 		// ignore
 		break;
@@ -67,5 +83,38 @@ void MMLPreprocessor::process_Artist(const MMLExprStruct& expr) {
 void MMLPreprocessor::process_OctaveReverse(const MMLExprStruct& expr) {
 	if (mpDocument) {
 		mpDocument->setOctaveReverseEnabled(true);
+	}
+}
+
+void MMLPreprocessor::process_Duration(const MMLExprStruct& expr) {
+	if (mpDocument) {
+		mpDocument->setRecommendedDuration( expr.tokenList[1].intVal );
+	}
+}
+
+void MMLPreprocessor::process_Comment(const MMLExprStruct& expr) {
+	const std::string& sQuoted = expr.tokenList[1].rawStr;
+	const std::string& s = cleanStringLiteral(sQuoted);
+
+	if (mpDocument) {
+		mpDocument->setComment(s);
+	}
+}
+
+void MMLPreprocessor::process_Coder(const MMLExprStruct& expr) {
+	const std::string& sQuoted = expr.tokenList[1].rawStr;
+	const std::string& s = cleanStringLiteral(sQuoted);
+
+	if (mpDocument) {
+		mpDocument->setCoderName(s);
+	}
+}
+
+void MMLPreprocessor::process_GameTitle(const MMLExprStruct& expr) {
+	const std::string& sQuoted = expr.tokenList[1].rawStr;
+	const std::string& s = cleanStringLiteral(sQuoted);
+
+	if (mpDocument) {
+		mpDocument->setGameTitle(s);
 	}
 }

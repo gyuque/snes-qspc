@@ -6,10 +6,13 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <map>
+
 class MMLTokenTypeInfo;
 class MMLExpressionForm;
 typedef std::vector<MMLTokenTypeInfo> MMLTokTypeList;
 typedef std::vector<MMLExpressionForm> MMLExpFormList;
+typedef std::map<char, bool> LetterMap;
 
 typedef short DriverTick;
 #define FULL_TICK 192

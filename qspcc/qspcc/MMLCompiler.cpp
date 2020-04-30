@@ -49,7 +49,7 @@ void MMLCompiler::clearCommands() {
 	mCommandPtrList.clear();
 }
 
-bool MMLCompiler::compile(std::string filename) {
+bool MMLCompiler::compile(std::string filename, MMLCompiler* prevCompiler) {
 	mCurrentFilename = filename;
 	if (mpExprBuilder) { return false; }
 
@@ -87,6 +87,7 @@ bool MMLCompiler::compile(std::string filename) {
 	mpLastDocument = new MusicDocument();
 
 	preprocess();
+	usePrevInstsIf(prevCompiler); // instsが指定されていない場合は直前のMMLのものを使う
 	const InstLoadResult ld_res = mpLastDocument->loadInstrumentSet(mVerboseLevel); // プリプロセスでinst setが指定されている筈（されていなければエラー）
 	checkGlobalErrors(ld_res);
 	if (shouldAbort()) { // ERROR CHECK -------------
@@ -134,6 +135,19 @@ void MMLCompiler::preprocess() {
 			pp.processExpression(*pX);
 		}
 	}
+}
+
+void MMLCompiler::usePrevInstsIf(MMLCompiler* pPrevCompiler) {
+	if (mpLastDocument->isInstrumentSetNameSet()) {
+		return;
+	}
+
+	if (!pPrevCompiler) {
+		return;
+	}
+
+	const auto prevDoc = pPrevCompiler->referLastDocument();
+	mpLastDocument->setInstrumentSetName( prevDoc->getInstrumentSetName() );
 }
 
 void MMLCompiler::generateCommands() {
@@ -267,6 +281,11 @@ void MMLCompiler::generateATrack(int trackIndex, MusicTrack* pTrack) {
 			}
 		}
 	}
+
+	// add foot marker
+	pTrack->addByte(0);
+	pTrack->addByte(0);
+	pTrack->addByte(0);
 }
 
 void MMLCompiler::dumpAllCommands() {
@@ -359,4 +378,37 @@ void MMLCompiler::dumpAllErrors() {
 		std::cerr << std::endl;
 		std::cerr << err.message << std::endl;
 	}
+}
+
+bool MMLCompiler::checkCanShareDriver(const class MMLCompiler& theOther, size_t mutableZoneSize, const EmbedderConfig& eConfig) {
+	const int brrStart = eConfig.getBRRBodyOrigin();
+
+	const MusicDocument* docSelf  = constLastDocument();
+	const MusicDocument* docOther = theOther.constLastDocument();
+
+	ByteList brrSelf;
+	docSelf->referInstrumentSet().exportBRR(brrSelf);
+
+	ByteList brrOther;
+	docOther->referInstrumentSet().exportBRR(brrOther);
+
+	// サイズが違う場合はbad
+	if (brrSelf.size() != brrOther.size()) {
+		return false;
+	}
+
+	// サイズが固定ポイントに満たなければbad
+	if (brrSelf.size() < mutableZoneSize) {
+		return false;
+	}
+
+	//               v--  固定部のアドレスからスタート
+	for (size_t i = mutableZoneSize; i < mutableZoneSize; ++i) {
+		if (brrSelf.at(i) != brrOther.at(i)) {
+			return false;
+		}
+	}
+
+
+	return true;
 }

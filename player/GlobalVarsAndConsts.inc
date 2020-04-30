@@ -23,6 +23,9 @@
 .define gScrollCount       $0080 ; |  G
 .define gSpAnimationCount  $0082 ; |  G
 
+.define gPrevLPush         $008A ; |  G
+.define gPrevRPush         $008C ; |  G
+
 ; SPC work area
 .define gTxIndirectTemp    $0090 ; |  G 24bit
 .define gSPCSendCounter    $0096 ; |  G
@@ -44,7 +47,8 @@
 .define gSpinnerFrameIdx   $00C2 ; |  G
 .define gLoaderBusy        $00C4 ; |  G
 
-.define gQuickLoadOK       $00CE ; |  G
+.define gQuickLoadOK       $00CA ; |  G
+.define gQuickLoadSize     $00CE ; |  G
 
 ; Selection
 .define gSelectedIndex     $0110 ; |  G
@@ -88,6 +92,7 @@
 .define kPad16_TrgX  #$0040
 .define kPad16_TrgY  #$4000
 .define kPad16_TrgL  #$0020
+.define kPad16_TrgR  #$0010
 .define kPad16_Start #$1000
 
 .define kPad16_UpDown  #$0C00

@@ -21,6 +21,7 @@ typedef enum _MMLTokenType {
 	TT_BLANK,
 	TT_TEMPO_CMD,
 	TT_NSHIFT_CMD,
+	TT_VSHIFT_CMD,
 	TT_OCT_CMD,
 	TT_LEN_CMD,
 	TT_VELO_CMD,
@@ -33,6 +34,8 @@ typedef enum _MMLTokenType {
 	TT_DOTS,
 	TT_TERM,  //  ;
 	TT_SLASH, //  /
+
+	TT_REMARK, //  / * * /
 
 	TT_CMB_START, // {
 	TT_CMB_END,   // }
@@ -49,12 +52,18 @@ typedef enum _MMLTokenType {
 	TT_USING,
 	TT_TITLE,
 	TT_ARTIST,
-	TT_OCTREV
+	TT_OCTREV,
+	TT_DURATION,
+	TT_COMMENT,
+	TT_CODER,
+	TT_GAMETITLE,
+	TT_STOPBGM // @x
 } MMLTokenType;
 
 typedef enum _MMLExpressionType {
 	MX_TEMPO,
 	MX_NSHIFT,
+	MX_VSHIFT,
 	MX_INSTCHG,
 	MX_OCTSET,
 	MX_LENSET,
@@ -64,6 +73,7 @@ typedef enum _MMLExpressionType {
 	MX_ODEC,
 	MX_NOTE,
 	MX_PANPOT,
+	MX_STOPBGM,
 	MX_TERM,
 	MX_SLASH,
 
@@ -77,8 +87,14 @@ typedef enum _MMLExpressionType {
 	MX_TITLEDECL,
 	MX_ARTISTDECL,
 	MX_OCTREVDECL,
+	MX_DURATIONDECL,
+	MX_CODERDECL,
+	MX_GAMETITLEDECL,
+	MX_COMMENT,
 	MX_MACRODEF,
-	MX_MACROUSE
+	MX_MACROUSE,
+
+	MX_REMARK
 } MMLExpressionType;
 
 
@@ -92,5 +108,11 @@ typedef enum {
 	INSTLD_BAD_MANIFEST = -4,
 	INSTLD_BRR_NOTFOUND = -5
 } InstLoadResult;
+
+typedef enum {
+	QL_NONE = 0,
+	QL_FULL = 1,
+	QL_PART = 2
+} QuickLoadType;
 
 #endif

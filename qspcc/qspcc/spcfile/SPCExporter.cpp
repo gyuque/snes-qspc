@@ -1,5 +1,6 @@
 #include <memory.h>
 #include <string.h>
+#include <time.h>
 #include "SPCExporter.h"
 
 #define kSPCFileHeaderSize 256
@@ -16,6 +17,15 @@ SPCExporter::SPCExporter() : mFileImage(NULL, false) {
 
 SPCExporter::~SPCExporter() {
 
+}
+
+static void writeCurrentDate(ID666& id666) {
+	const time_t nowt = time(NULL);
+
+	struct tm lt;
+	localtime_s(&lt, &nowt);
+
+	sprintf_s(id666.date, "%02d/%02d/%04d", lt.tm_mon+1, lt.tm_mday, lt.tm_year + 1900);
 }
 
 void SPCExporter::initID666() {
@@ -47,7 +57,8 @@ void SPCExporter::initID666() {
 	static const char* kDefaultGameTitle = "Unknown";
 	static const char* kDumperName = "qSPC2";
 	static const char* kDefaultComment = "Exported from qSPC2";
-	static const char* kDefaultComposer = " Unknown";
+	static const char* kDefaultComposer = "Unknown";
+	static const char* kDefaultDate = "11/21/1990";
 
 	memcpy_s(mID666.songTitle, sizeof(mID666.songTitle), kDefaultSongTitle, strlen(kDefaultSongTitle));
 	memcpy_s(mID666.gameTitle, sizeof(mID666.gameTitle), kDefaultGameTitle, strlen(kDefaultGameTitle));
@@ -56,15 +67,18 @@ void SPCExporter::initID666() {
 	memcpy_s(mID666.composer , sizeof(mID666.composer) , kDefaultComposer , strlen(kDefaultComposer));
 
 	// : Date
-	mID666.day = 21;
-	mID666.month = 11;
-	mID666.year = 1990;
+	memcpy_s(mID666.date, sizeof(mID666.date), kDefaultDate, strlen(kDefaultDate));
 
-	mID666.duration = 15;
-	mID666.fadeTime[2] = 0x0A; // 00 00 0A 00 -> (2560ms)
+	mID666.duration[0] = '1';
+	mID666.duration[1] = '5';
+
+	mID666.fadeTime[0] = '2';
+	mID666.fadeTime[1] = '0';
+	mID666.fadeTime[2] = '0';
+	mID666.fadeTime[3] = '0';
 
 
-	mID666.emulatorType = 2; // Snes9x(fake)
+	mID666.emulatorType = '2'; // Snes9x(fake)
 }
 
 void SPCExporter::setProgramCounter(unsigned short val) {
@@ -93,17 +107,15 @@ void SPCExporter::writeHeader() {
 	write_field(0x6E, mID666.spcDumper);
 	write_field(0x7E, mID666.comment);
 
-	write_field(0x9E, mID666.day);
-	write_field(0x9F, mID666.month);
-	write_field(0xA0, mID666.year);
+	write_field(0x9E, mID666.date);
 
 	write_field(0xA9, mID666.duration);
 	write_field(0xAC, mID666.fadeTime);
 
-	write_field(0xB0, mID666.composer);
+	write_field(0xB1, mID666.composer);
 
 	
-	write_field(0xD1, mID666.emulatorType);
+	write_field(0xD2, mID666.emulatorType);
 }
 
 void SPCExporter::writeDriverImage(const BinFile* pSource, unsigned short destOrigin) {
@@ -111,6 +123,7 @@ void SPCExporter::writeDriverImage(const BinFile* pSource, unsigned short destOr
 }
 
 bool SPCExporter::exportToFile(const char* filename) {
+	writeCurrentDate(mID666);
 	writeHeader();
 	mFileImage.exportToFile(filename);
 	return true;
@@ -122,18 +135,61 @@ static void applyStringLengthLimit(std::string& s, size_t limit) {
 	}
 }
 
+static void copyFieldString(void* dest, size_t size, const std::string& str) {
+	memset(dest, 0, size);
+	memcpy_s(dest, size, str.c_str(), str.length());
+}
+
+#define set_id666_field(field)  copyFieldString(mID666. field, sizeof(mID666. field), cutStr);
+
 void SPCExporter::setTitle(const std::string& title) {
 	std::string cutStr = title;
 	applyStringLengthLimit(cutStr, sizeof(mID666.songTitle) - 1);
-
-	memset(&(mID666.songTitle), 0, sizeof(mID666.songTitle));
-	memcpy_s(mID666.songTitle, sizeof(mID666.songTitle), cutStr.c_str(), cutStr.length());
+	set_id666_field(songTitle);
 }
 
 void SPCExporter::setComposer(const std::string& composer) {
-	std::string cutStr = " " + composer;
+	std::string cutStr = composer;
 	applyStringLengthLimit(cutStr, sizeof(mID666.composer) - 1);
+	set_id666_field(composer);
+}
 
-	memset(&(mID666.composer), 0, sizeof(mID666.composer));
-	memcpy_s(mID666.composer, sizeof(mID666.composer), cutStr.c_str(), cutStr.length());
+void SPCExporter::setComment(const std::string& comment) {
+	if (comment.length() > 0) {
+		std::string cutStr = comment;
+		applyStringLengthLimit(cutStr, sizeof(mID666.comment) - 1);
+		set_id666_field(comment);
+	}
+}
+
+void SPCExporter::setDumperName(const std::string& name) {
+	if (name.length() > 0) {
+		std::string cutStr = name;
+		applyStringLengthLimit(cutStr, sizeof(mID666.spcDumper));
+		set_id666_field(spcDumper);
+	}
+}
+
+void SPCExporter::setGameTitle(const std::string& gameTitle) {
+	if (gameTitle.length() > 0) {
+		std::string cutStr = gameTitle;
+		applyStringLengthLimit(cutStr, sizeof(mID666.gameTitle));
+		set_id666_field(gameTitle);
+	}
+}
+
+void SPCExporter::setDuration(unsigned int duration) {
+	if (duration > 999) { duration = 999; }
+	else if (duration < 1) { duration = 1; }
+
+	char buf[4];
+	sprintf_s(buf, "%d", duration);
+
+	for (unsigned int i = strlen(buf); i < 4; ++i) {
+		buf[i] = 0;
+	}
+
+	mID666.duration[0] = buf[0];
+	mID666.duration[1] = buf[1];
+	mID666.duration[2] = buf[2];
 }

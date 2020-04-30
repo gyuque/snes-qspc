@@ -6,7 +6,7 @@
 
 #define kSoundMetaHeaderSize (16)
 #define kSoundMetaBlockSize (32)
-#define kMaxTitleLength (31)
+#define kMaxTitleLength (23)
 
 #define kChecksumC_Addr 0x7FDC
 #define kChecksum_Addr  0x7FDE
@@ -44,12 +44,17 @@ void ROMEmbedder::setBaseDir(const std::string& baseDir) {
 	mBaseDir = baseDir;
 }
 
-void ROMEmbedder::writeMetadataHeader(bool quickLoad) {
+void ROMEmbedder::writeMetadataHeader(bool quickLoad, unsigned int qlSize) {
 	RomSectionEntry* sec = mRomMap.findSoundMetadataSection();
 	assert(!!(sec) && !!(mpSourceBin));
 	if (!sec) { return; }
 
+	// +00: Quick Load Flag 
 	mpSourceBin->writeByte(sec->offset, quickLoad ? 1 : 0);
+
+	// +02,+03: Quick Load Size (WORD)
+	mpSourceBin->writeByte(sec->offset + 2, qlSize & 0x00FF);
+	mpSourceBin->writeByte(sec->offset + 3, (qlSize >> 8) & 0x00FF);
 }
 
 void ROMEmbedder::clearMetadataArea(size_t nTracks) {

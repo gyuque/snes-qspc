@@ -7,8 +7,9 @@
 #define kRomImageEntryName  "rom-image"
 #define kRomMapEntryName    "rom-map"
 #define kMaxTracksEntryName "max-tracks"
+#define kQuickLoadBlobKBName "qload-blob-kb"
 
-GlobalConfig::GlobalConfig() : mMaxTracks(1)
+GlobalConfig::GlobalConfig() : mMaxTracks(1), mQuickLoadBlobSize(16*1024)
 {
 	mBaseDir = ".";
 }
@@ -49,6 +50,10 @@ bool GlobalConfig::load() {
 
 	if (jHasProperty(j, kMaxTracksEntryName)) {
 		mMaxTracks = (int)( j[kMaxTracksEntryName].get<double>() );
+	}
+
+	if (jHasProperty(j, kQuickLoadBlobKBName)) {
+		mQuickLoadBlobSize = 1024 * (size_t)(j[kQuickLoadBlobKBName].get<double>());
 	}
 
 	return true;

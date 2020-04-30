@@ -59,7 +59,7 @@
 	jsr spcInternalInit
 
 	; send driver image (Lo part, quick)
-	lda kDriverQuickLoadSize
+	lda gQuickLoadSize
 	sta gBlobSizeToSend
 	; *** gBlobSrcAddrLo/Hi MUST BE SET ***
 	ldx #0 ; start from origin
@@ -80,8 +80,9 @@
 	save_paxy
 
 	; Initialize SE seq. count
-	stz gSE1SeqCount
-	stz gSE2SeqCount
+	lda #$06 ; <- avoid initial value of the port
+	sta gSE1SeqCount
+	sta gSE2SeqCount
 	
 	; Initialize counter
 	lda kSPCCounterInitiatorVal
@@ -225,18 +226,17 @@ set_a8
 	; send body
 transfer_loop_start:
 
-	; A[hi] <- data
-	lda [gTxIndirectTemp],y
-	xba
-
-	; A[lo] <- counter
+	; - - - - - - SEND - - - - - -
+	; Port0 <- counter
+	; Port1 <- data
+	
 	lda gSPCSendCounter
-
-set_a16
-.a16
 	sta pSPC0
-set_a8
-.a8
+
+	lda [gTxIndirectTemp],y
+	sta pSPC1
+	
+	lda gSPCSendCounter
 	mWaitSPC0Val
 
 	inc gSPCSendCounter
@@ -269,13 +269,18 @@ set_a16
 
 	; Set launch address
 	lda kSPCDriverEntryAddr
-	sta pSPC2
+set_a8
+.a8
+	sta pSPC2 ; LO
+	xba
+	sta pSPC3 ; HI
 	
 	; Finish IPL
 	lda gSPCSendCounter
-	and #$00FF ; clear upper bits
-
 	sta pSPC0
+	stz pSPC1
+set_a16
+.a16
 
 	restore_paxy
 	rts
@@ -287,23 +292,29 @@ set_a16
 .i16
 	save_paxy
 
-
+set_a8
+.a8
 	wait_loop:
 		lda pSPC1
-		and #$00FF
 		bne wait_loop
 
-	stz pSPC2 ; reset SE control
+;	stz pSPC2 ;
+;	stz pSPC3 ;
+set_a16
+.a16
 		
 	restore_paxy
 	rts
 .endproc
 
+.define kCounterMask #$0007
+
+; TRIGGER COUNTER = 3bits
 .macro increment_sendcounter counter
-	; counter = (counter+1) & 0x000F
+	; counter = (counter+1) & 0x0007
 	lda counter
 	inc
-	and #$000F
+	and kCounterMask
 	sta counter
 .endmacro
 
@@ -315,7 +326,7 @@ set_a16
 	begin_lvar_1 ; v1 <- A
 
 	increment_sendcounter gSE1SeqCount
-	left_shift_4
+	left_shift_5
 	ora_v1
 	
 set_a8
@@ -337,7 +348,7 @@ set_a16
 	begin_lvar_1 ; v1 <- A
 
 	increment_sendcounter gSE2SeqCount
-	left_shift_4
+	left_shift_5
 	ora_v1
 	
 set_a8

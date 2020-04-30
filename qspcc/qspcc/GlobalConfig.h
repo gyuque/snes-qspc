@@ -32,6 +32,10 @@ public:
 		return mMaxTracks;
 	}
 
+	size_t getQuickLoadBlobSize() const {
+		return mQuickLoadBlobSize;
+	}
+
 protected:
 	std::string mBaseDir;
 	std::string mDriverConfigFileName;
@@ -40,6 +44,7 @@ protected:
 	std::string mRomImageFileName;
 	std::string mRomMapFileName;
 
+	size_t mQuickLoadBlobSize;
 	size_t mMaxTracks;
 };
 

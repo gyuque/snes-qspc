@@ -38,22 +38,33 @@ bool Embedder::exportToFile(const char* filename, const char* hi_filename) {
 	return suc_1 && suc_2;
 }
 
-void Embedder::embed(bool bVerbose,
+bool Embedder::exportToFileHalf(const char* filename) {
+	if (!mpSourceBin) { return false; }
+	return mpSourceBin->exportToFile(filename, 0, getQuickLoadSize());
+}
+
+int Embedder::getQuickLoadSize() const {
+	return mConfig.getInstDirOrigin();
+}
+
+void Embedder::embed(bool bVerbose, bool debugOut,
 		IEmbedderSource* pMusicHeaderSource,
 		IEmbedderSource* pFqTableSource,
 		IEmbedderSource* pSeqSource,
 		IEmbedderSource* pInstDirSource,
 		IEmbedderSource* pBRRDirSource,
-		IEmbedderSource* pBRRBodySource
+		IEmbedderSource* pBRRBodySource,
+		IEmbedderSource* pSeqDirSource
 	) {
 	mResultList.clear();
 
-	embedFromSource(pMusicHeaderSource, mConfig.getMusicHeaderOrigin(), mConfig.calcMusicHeaderCapacity(), "Header");
-	embedFromSource(pFqTableSource, mConfig.getFqTableOrigin(), mConfig.calcFqTableCapacity(), "Fq Table");
-	embedFromSource(pSeqSource, mConfig.getSequenceOrigin(), mConfig.calcSequenceCapacity(), "Sequence");
-	embedFromSource(pInstDirSource, mConfig.getInstDirOrigin(), mConfig.calcInstDirCapacity(), "Inst Dir");
-	embedFromSource(pBRRDirSource, mConfig.getBRRDirOrigin(), mConfig.calcBRRDirCapacity(), "BRR dir");
-	embedFromSource(pBRRBodySource, mConfig.getBRRBodyOrigin(), mConfig.calcBRRBodyCapacity(), "BRR body");
+	embedFromSource(pMusicHeaderSource, mConfig.getMusicHeaderOrigin(), mConfig.calcMusicHeaderCapacity(), "Header", debugOut);
+	embedFromSource(pFqTableSource, mConfig.getFqTableOrigin(), mConfig.calcFqTableCapacity(), "Fq Table", debugOut);
+	embedFromSource(pSeqSource, mConfig.getSequenceOrigin(), mConfig.calcSequenceCapacity(), "Sequence", debugOut);
+	embedFromSource(pSeqDirSource, mConfig.getSeqDirOrigin(), mConfig.calcSeqDirCapacity(), "Seq dir", debugOut);
+	embedFromSource(pInstDirSource, mConfig.getInstDirOrigin(), mConfig.calcInstDirCapacity(), "Inst Dir", debugOut);
+	embedFromSource(pBRRDirSource, mConfig.getBRRDirOrigin(), mConfig.calcBRRDirCapacity(), "BRR dir", debugOut);
+	embedFromSource(pBRRBodySource, mConfig.getBRRBodyOrigin(), mConfig.calcBRRBodyCapacity(), "BRR body", debugOut);
 
 	if (!bVerbose) {
 		mResultList.erase(mResultList.begin());
@@ -148,7 +159,7 @@ bool Embedder::loadSourceBin(const char* filename) {
 	return !!(mpSourceBin);
 }
 
-void Embedder::embedFromSource(IEmbedderSource* pSource, unsigned int origin, unsigned int capacity, const std::string& chunkName) {
+void Embedder::embedFromSource(IEmbedderSource* pSource, unsigned int origin, unsigned int capacity, const std::string& chunkName, bool debugOut) {
 	if (!mpSourceBin || !pSource) { return; }
 
 	const unsigned int lastAddr = origin + pSource->esGetSize() - 1;
@@ -176,11 +187,26 @@ void Embedder::embedFromSource(IEmbedderSource* pSource, unsigned int origin, un
 		return;
 	}
 
+	FILE* fpD = nullptr;
+	if (debugOut) {
+		// デバッグ用出力をセットアップ
+		std::string dname = "_debug_" + chunkName + ".bin";
+		fpD = fopen(dname.c_str(), "wb");
+	}
 
 	const size_t n = pSource->esGetSize();
 	for (size_t i = 0; i < n; ++i) {
 		const uint8_t k = pSource->esGetAt(i);
 		mpSourceBin->writeByte(origin + i, k);
+
+		if (fpD) {
+			fputc(k, fpD);
+		}
+	}
+
+	if (fpD) {
+		fclose(fpD);
+		fpD = nullptr;
 	}
 
 	mResultList[mResultList.size() - 1].success = true; // Change success flag

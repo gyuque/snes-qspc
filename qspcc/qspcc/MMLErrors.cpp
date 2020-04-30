@@ -61,12 +61,17 @@ static void registerErrorMessages_JP() {
 	_er(MMLErrors::E_INST_M_NOTFOUND, "音色セットのマニフェストをロードできません");
 	_er(MMLErrors::E_INST_M_BAD     , "音色セットのマニフェストにエラーがあります");
 	_er(MMLErrors::E_INST_B_NOTFOUND, "マニフェスト内で指定されているBRRファイルが見つかりません");
+	_er(MMLErrors::E_INST_MULTI_FIX , "BRRの固定ポイントは1回のみ指定できます");
+	_er(MMLErrors::E_INST_EXCEED_FIX, "可変部のBRRデータが固定ポイントを超過しました");
+	_er(MMLErrors::E_INST_BAD_FIXBRR, "固定部のBRRデータが一致していません");
 	_er(MMLErrors::E_EMB_CAPACITY_EX, "データセクションの容量が足りません");
+	_er(MMLErrors::E_TOO_MANY_FILES , "入力ファイルが多すぎます");
 
 
 	_er(MMLErrors::MSG_COMPILING    , "●コンパイル中: ");
 	_er(MMLErrors::MSG_EMBEDEXP     , "容量を超過すると ! マークが表示されます");
 	_er(MMLErrors::MSG_EXPORTING    , "出力しています...");
+	_er(MMLErrors::MSG_FIXENABLED   , "データ固定ポイントが設定されました");
 	_er(MMLErrors::MSG_SUCCESSS     , "<正常に終了しました>");
 }
 

@@ -23,13 +23,13 @@ scope waitTimer: {
 	timer_wait_loop:
 		// SE用上位カウンタをチェック
 		// 0以外（カウントアップ）ならSE処理をここに割り込ませる
-		lda $FE
+		lda $FE // SE用カウンタ値ロード
 		beq no_sei
 			jsr processSystemCommand
 			// jsr seProc
 		no_sei:
 	
-		lda $FD // BGM用カウンタチェック
+		lda $FD // BGM用カウンタ値ロード
 		beq timer_wait_loop
 		
 	// SE用カウンタをインクリメント

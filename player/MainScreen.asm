@@ -18,6 +18,7 @@
 .export setupMainScreen
 .export startTextLayerHDMA
 .export processMainInput
+.export processSETriggers
 .export moveCursorSprite
 .export msUpdateCursorSpriteTile
 .export msAdvanceSpinnerAnimation
@@ -56,6 +57,8 @@
 	ldsta gScrollCount,#-160
 
 	stz gPadState
+	stz gPrevLPush
+	stz gPrevRPush
 	stz gCurPadUD
 	stz gPrevPadUD
 	stz gCurPadTrg
@@ -342,10 +345,45 @@ set_a16
 
 	ldsta gPrevPadTrg, gCurPadTrg
 
+	
 	endf:
 	restore_paxy
 	rts
 .endproc
+
+; A16, I16
+.proc processSETriggers
+.a16
+.i16
+	save_paxy
+
+	; SE triggers
+	lda gPadState
+	and kPad16_TrgL
+	cmp gPrevLPush
+	beq no_chgL
+		sta gPrevLPush
+		bit kPad16_TrgL
+		beq no_chgL
+			lda #0
+			jsr spcRequestSE1
+	no_chgL:
+	
+	lda gPadState
+	and kPad16_TrgR
+	cmp gPrevRPush
+	beq no_chgR
+		sta gPrevRPush
+		bit kPad16_TrgR
+		beq no_chgR
+			lda #1
+			jsr spcRequestSE2
+	no_chgR:
+
+	restore_paxy
+	rts
+.endproc
+
 
 ; A16, I16
 .proc processInputTrigger
@@ -679,11 +717,14 @@ set_a16
 	
 	; Append fixed message
 	lda gTextBufWPos
-	add #4
-	sta gTextBufWPos
-	
-	ldstx_long WStrInstruction
-	jsr tbAppendFromAssetWordSZ
+	cmp #(46*2)
+	bcs skip_footstr ; Skip if very long title/author name is set
+		add #4
+		sta gTextBufWPos
+		
+		ldstx_long WStrInstruction
+		jsr tbAppendFromAssetWordSZ
+	skip_footstr:
 	
 	end_lvar_1
 	restore_paxy

@@ -52,7 +52,7 @@ public:
 	void loadTemplate(const std::string& filename, const std::string& mapFilename, int verboseLevel);
 
 	void clearMetadataArea(size_t nTracks);
-	void writeMetadataHeader(bool quickLoad);
+	void writeMetadataHeader(bool quickLoad, unsigned int qlSize);
 	void writeMetadata(unsigned int index, const std::string& title, const std::string& authorName);
 	void writeString(unsigned int startAddress, const std::string& strData, size_t validMaxLength, size_t bufferLength);
 

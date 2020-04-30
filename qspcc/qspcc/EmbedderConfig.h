@@ -18,12 +18,14 @@ public:
 	int getProgramOrigin() const { return mProgramOrigin; }
 	int getMusicHeaderOrigin() const { return mMusicHeaderEmbedPosition; }
 	int getSequenceOrigin() const { return mSequenceEmbedPosition; }
+	int getSeqDirOrigin() const { return mSeqDirEmbedPosition; }
 	int getInstDirOrigin() const { return mInstDirEmbedPosition; }
 	int getBRRDirOrigin() const { return mBRRDirEmbedPosition; }
 	int getFqTableOrigin() const { return mFqTableEmbedPosition; }
 	int getBRRBodyOrigin() const { return mBRRBodyEmbedPosition; }
 	int calcMusicHeaderCapacity() const;
 	int calcSequenceCapacity() const;
+	int calcSeqDirCapacity() const;
 	int calcInstDirCapacity() const;
 	int calcBRRDirCapacity() const;
 	int calcFqTableCapacity() const;
@@ -35,6 +37,7 @@ protected:
 	int mProgramOrigin;
 	int mMusicHeaderEmbedPosition;
 	int mSequenceEmbedPosition;
+	int mSeqDirEmbedPosition;
 	int mInstDirEmbedPosition;
 	int mBRRDirEmbedPosition;
 	int mFqTableEmbedPosition;

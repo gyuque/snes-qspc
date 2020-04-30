@@ -4,7 +4,7 @@
 #include <iostream>
 static void array_if(uint8_t& outU8, const picojson::array& a, unsigned int pos);
 
-InstrumentSet::InstrumentSet() : mMaxInstIndex(0)
+InstrumentSet::InstrumentSet() : mMaxInstIndex(0), mFirstFixPoint(0)
 {
 }
 
@@ -39,7 +39,10 @@ InstLoadResult InstrumentSet::load(const char* manifestPath, const char* baseDir
 	mBaseFq = (float)jObj["base-frequency"].get<double>();
 	mOriginOctave = (int)jObj["origin-octave"].get<double>();
 
-	readInstDefs(jObj);
+	if (readInstDefs(jObj) != INSTS_OK) {
+		return INSTLD_BAD_MANIFEST;
+	}
+
 	if (!loadBRRBodies(baseDir)) {
 		return INSTLD_BRR_NOTFOUND;
 	}
@@ -73,7 +76,7 @@ unsigned int InstrumentSet::findMaxInst(const picojson::object& parentObj) {
 	return m;
 }
 
-void InstrumentSet::readInstDefs(picojson::object& parentObj) {
+InstsResult InstrumentSet::readInstDefs(picojson::object& parentObj) {
 	mMaxInstIndex = findMaxInst(parentObj);
 
 	char buf[8];
@@ -85,12 +88,19 @@ void InstrumentSet::readInstDefs(picojson::object& parentObj) {
 
 			if (isInstDefValid(def)) {
 				const std::string& brrFilename = def["brr"].get<std::string>();
-				addInst(def);
+				const auto ares = addInst(def);
+				if (ares != INSTS_OK) {
+					return ares;
+				}
+			} else {
+				return INSTS_ERR_BADDEF;
 			}
 		} else {
 			addDummyInst();
 		}
 	}
+
+	return INSTS_OK;
 }
 
 bool InstrumentSet::isInstDefValid(const picojson::object& def) {
@@ -104,9 +114,11 @@ void InstrumentSet::setDefaultADSR(InstADSR& outADSR) {
 	outADSR.R = 18;
 }
 
-void InstrumentSet::addInst(const picojson::object& src) {
+InstsResult InstrumentSet::addInst(const picojson::object& src) {
 	InstDef def_s;
 
+	def_s.fixPoint = 0;
+	def_s.priority = 0;
 	def_s.srcn = -1;
 	def_s.filename = src.at("brr").get<std::string>();
 
@@ -123,15 +135,37 @@ void InstrumentSet::addInst(const picojson::object& src) {
 		array_if(def_s.adsr.R  , j_adsr, 3);
 	}
 
+	// - アドレス固定 -
+	// ドライバの部分入れ替えをする場合は、固定BRRの先頭アドレスを指定する(ここより後は複数のinstsで同じになるように)
+	if (jHasProperty(src, "fix")) {
+		def_s.fixPoint = (unsigned int)src.at("fix").get<double>();
+	}
+
+	if (jHasProperty(src, "priority")) {
+		def_s.priority = 1;
+	}
+
 	if (mVerboseLevel > 0) {
 		fprintf(stderr, "Inst filename: %s\n", def_s.filename.c_str());
 	}
 
+	if (def_s.fixPoint) {
+		if (mFirstFixPoint) {
+			// 既に指定がある場合: 複数指定不可エラー
+			std::cerr << "Can't set fix point again.";
+			return INSTS_ERR_DUPFIX;
+		} else {
+			mFirstFixPoint = def_s.fixPoint;
+		}
+	}
+
 	mInstList.push_back(def_s);
+	return INSTS_OK;
 }
 
 void InstrumentSet::addDummyInst() {
 	InstDef def_s;
+	def_s.fixPoint = 0;
 	def_s.srcn = 0;
 	def_s.filename = DUMMY_INST_WAV_NAME;
 	setDefaultADSR(def_s.adsr);
@@ -141,24 +175,32 @@ void InstrumentSet::addDummyInst() {
 
 bool InstrumentSet::loadBRRBodies(const std::string& baseDir) {
 	InstDefList::const_iterator it;
-	for (it = mInstList.begin(); it != mInstList.end(); it++) {
-		const std::string& fn = it->filename;
+	for (auto phase = 0; phase < 2; ++phase) {
+		// 1周目 -> priority=1 をロード
+		// 2周目 -> priority=0 をロード
+		const auto prio_to_load = 1 - phase;
 
-		if (0 == fn.compare(DUMMY_INST_WAV_NAME)) {
-			// ダミーなのでBRRファイルは存在しない
-			continue;
-		}
+		for (it = mInstList.begin(); it != mInstList.end(); it++) {
+			if (it->priority != prio_to_load) { continue; }
 
-		std::string path = baseDir + '/' + fn;
-		if (!loadBRRIf(fn, path)) {
-			return false;
+			const std::string& fn = it->filename;
+
+			if (0 == fn.compare(DUMMY_INST_WAV_NAME)) {
+				// ダミーなのでBRRファイルは存在しない
+				continue;
+			}
+
+			std::string path = baseDir + '/' + fn;
+			if (!loadBRRIf(fn, path, it->fixPoint)) {
+				return false;
+			}
 		}
 	}
 
 	return true;
 }
 
-bool InstrumentSet::loadBRRIf(const std::string& name, const std::string& path) {
+bool InstrumentSet::loadBRRIf(const std::string& name, const std::string& path, unsigned int fixPoint) {
 	if (findBRR(name)) {
 		return true;
 	}
@@ -174,7 +216,7 @@ bool InstrumentSet::loadBRRIf(const std::string& name, const std::string& path) 
 	//pBRR->dump();
 
 	mBRRPtrs.push_back(pBRR);
-	mBRRPacker.addBRR(pBRR, mVerboseLevel > 0);
+	mBRRPacker.addBRR(pBRR, fixPoint, mVerboseLevel > 0);
 	return true;
 }
 
@@ -323,7 +365,7 @@ void InstrumentSet::exportPackedInstTable(ByteList& outBytes) {
 	}
 }
 
-void InstrumentSet::exportBRR(ByteList& outBytes) {
+void InstrumentSet::exportBRR(ByteList& outBytes) const {
 	mBRRPacker.exportAll(outBytes);
 }
 

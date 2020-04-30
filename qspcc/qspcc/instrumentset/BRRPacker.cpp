@@ -8,9 +8,28 @@ BRRPacker::~BRRPacker() {
 
 }
 
-void BRRPacker::addBRR(const C700BRR* pBRR, bool verbose) {
+BPResult BRRPacker::addBRR(const C700BRR* pBRR, unsigned int fixPoint, bool verbose) {
 	const unsigned int a_size = pBRR->getAttackPartBytesSize();
 	const unsigned int l_size = pBRR->getLoopPartBytesSize();
+
+	if (fixPoint) {
+		// 固定ポイントまで強制的にアドレスを進める
+		// 現時点でオーバーしていればエラー
+
+		const int bsize = BRR_BODY_LEN + 1;
+		fixPoint = (fixPoint / bsize) * bsize; // BLOCKSIZEの倍数にする
+
+		if (mCurrentBytesSize < fixPoint) {
+			const int blank_size = fixPoint - mCurrentBytesSize;
+			const auto blocks_to_pad = blank_size / bsize;
+			if (verbose) {
+				fprintf(stderr, "\n\n[BLANKTOFIX] %d (%d)\n\n", blank_size, blocks_to_pad);
+			}
+			for (auto i = 0; i < blocks_to_pad; ++i) {
+				addPaddingBlock();
+			}
+		}
+	}
 
 	if (a_size) {
 		const unsigned int a_offset = mCurrentBytesSize;
@@ -31,6 +50,8 @@ void BRRPacker::addBRR(const C700BRR* pBRR, bool verbose) {
 			fprintf(stderr, " + BRR \"%s\" loop offset: %04X(%d)\n", pBRR->getName().c_str(), l_offset, l_offset);
 		}
 	}
+
+	return BRRPACK_OK;
 }
 
 unsigned int BRRPacker::addBlocks(const C700BRR* pBRR, bool is_loop) {
@@ -83,17 +104,29 @@ void BRRPacker::addDummyBlock() {
 	}
 
 	PackedBRRBlock b;
-	b.header = BRRH_END_BIT | BRRH_LOOP_BIT;
-	for (int i = 0; i < BRR_BODY_LEN; ++i) {
-		b.body[i] = 0;
-	}
+	writeZeroBlock(b);
 
 	const unsigned int l_offset = mCurrentBytesSize;
 	push_block(b);
 	mLoopNameMap[DUMMY_BLOCK_NAME] = l_offset;
 }
 
-void BRRPacker::exportAll(ByteList& outBytes) {
+void BRRPacker::addPaddingBlock() {
+	// fix位置調整用の埋め草ブロックを生成・追加
+
+	PackedBRRBlock b;
+	writeZeroBlock(b);
+	push_block(b);
+}
+
+void BRRPacker::writeZeroBlock(PackedBRRBlock& b) {
+	b.header = BRRH_END_BIT | BRRH_LOOP_BIT;
+	for (int i = 0; i < BRR_BODY_LEN; ++i) {
+		b.body[i] = 0;
+	}
+}
+
+void BRRPacker::exportAll(ByteList& outBytes) const {
 	const size_t n = mBlockList.size();
 
 	for (size_t i = 0; i < n; ++i) {
@@ -101,7 +134,7 @@ void BRRPacker::exportAll(ByteList& outBytes) {
 	}
 }
 
-void BRRPacker::exportBlock(ByteList& outBytes, const PackedBRRBlock& block) {
+void BRRPacker::exportBlock(ByteList& outBytes, const PackedBRRBlock& block) const {
 	outBytes.push_back( block.header );
 	for (int i = 0; i < BRR_BODY_LEN; ++i) {
 		outBytes.push_back(block.body[i]);

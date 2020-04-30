@@ -26,15 +26,10 @@ typedef struct _ID666 {
 	char spcDumper[16];
 	char comment[32];
 
-	char day;
-	char month;
-	short year;
-	char unused3[7];
+	char date[11];
 
-	short duration;
-	char unused4;
-
-	unsigned char fadeTime[4];
+	char duration[3];
+	char fadeTime[4];
 
 	char composer[32];
 
@@ -54,6 +49,10 @@ public:
 	void setProgramCounter(unsigned short val);
 	void setComposer(const std::string& composer);
 	void setTitle(const std::string& title);
+	void setDuration(unsigned int duration);
+	void setComment(const std::string& comment);
+	void setDumperName(const std::string& name);
+	void setGameTitle(const std::string& gameTitle);
 	void writeDriverImage(const class BinFile* pSource, unsigned short destOrigin);
 protected:
 	BinFile mFileImage;
