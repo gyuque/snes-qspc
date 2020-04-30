@@ -1,0 +1,10 @@
+#!/usr/bin/sh
+../driver/bass/bass.exe qdrv2n.sas
+if [ $? -eq 0 ]; then
+  split -b 32KB -d spcd2n.bin spcd2n-
+  cp spcd2n-00 ../n-player/assets/spcd2n-lo.bin
+  cp spcd2n-01 ../n-player/assets/spcd2n-hi.bin
+  rm -f spcd2n-00
+  rm -f spcd2n-01
+  echo "(Success)"
+fi
