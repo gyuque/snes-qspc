@@ -302,15 +302,15 @@ SongMetadataList:
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 
 	;      0123456789ABCDEF
-	.byte $00,$00
+	.byte $00,$00 ; DISABLED
 	.byte "rrying You"
 	.byte                  $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 
 	;      0123456789ABCDEF
-	.byte $00,$00
-	.byte "e Hisaishi"
+	.byte $00,$00 ; DISABLED
+	.byte "xxxxxxxxxx"
 	.byte                  $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
