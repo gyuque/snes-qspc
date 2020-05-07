@@ -265,8 +265,7 @@ SongMetadataHeader:
 
 SongMetadataList:
 	;      0123456789ABCDEF
-	.byte "DEMO3"
-	.byte                      $00,$00,$00
+	.byte "Dummy 01"
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
@@ -278,7 +277,7 @@ SongMetadataList:
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 
 	;      0123456789ABCDEF
-	.byte "SKY VIEW"
+	.byte "Dummy 02"
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
@@ -290,7 +289,7 @@ SongMetadataList:
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 
 	;      0123456789ABCDEF
-	.byte "MIDNIGHT"
+	.byte "Dummy 03"
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
 	.byte $00,$00,$00,$00, $00,$00,$00,$00
@@ -360,37 +359,37 @@ WStrInstruction:
 	
 .segment "SDRVROM1": far
 SndDrvImageBase:
-	.incbin "assets/drvimg-1-lo.bin"
+	.incbin "assets/demo-lo.bin"
 
 .segment "SDRVROM2": far
 SndDrvImageBaseHigh:
-	.incbin "assets/drvimg-1-hi.bin"
+	.incbin "assets/demo-hi.bin"
 
 .segment "SDRVROM3": far
 SndDrv2LoImageBase:
-	.incbin "assets/drvimg-2-lo.bin"
+	.incbin "assets/demo-lo.bin"
 
 .segment "SDRVROM4": far
 SndDrv2HiImageBase:
-	.incbin "assets/drvimg-2-hi.bin"
+	.incbin "assets/demo-hi.bin"
 
 
 .segment "SDRVROM5": far
 SndDrv3LoImageBase:
-	.incbin "assets/drvimg-3-lo.bin"
+	.incbin "assets/demo-lo.bin"
 
 .segment "SDRVROM6": far
 SndDrv3HiImageBase:
-	.incbin "assets/drvimg-3-hi.bin"
+	.incbin "assets/demo-hi.bin"
 
 ; - - - -
 .segment "SDRVROM7": far
 SndDrv4LoImageBase:
-	.incbin "assets/drvimg-lo.bin"
+	.incbin "assets/demo-lo.bin"
 
 .segment "SDRVROM8": far
 SndDrv4HiImageBase:
-	.incbin "assets/drvimg-hi.bin"
+	.incbin "assets/demo-hi.bin"
 ; - - - -
 
 .segment "DONTUSE"
