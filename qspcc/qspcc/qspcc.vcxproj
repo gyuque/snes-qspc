@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{69EE6EDF-BBE4-40B2-BC67-2B8E24155958}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>qspcc</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)..\debug\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)..\bin\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BinFile.h" />
+    <ClInclude Include="CommandOptions.h" />
+    <ClInclude Include="Embedder.h" />
+    <ClInclude Include="EmbedderConfig.h" />
+    <ClInclude Include="FrequencyTable.h" />
+    <ClInclude Include="GlobalConfig.h" />
+    <ClInclude Include="IMMLError.h" />
+    <ClInclude Include="instrumentset\BRRPacker.h" />
+    <ClInclude Include="instrumentset\C700BRR.h" />
+    <ClInclude Include="instrumentset\InstrumentSet.h" />
+    <ClInclude Include="json\picojson.h" />
+    <ClInclude Include="json\PicoJSONUtils.h" />
+    <ClInclude Include="MacroDictionary.h" />
+    <ClInclude Include="MMLCommand.h" />
+    <ClInclude Include="MMLCompiler.h" />
+    <ClInclude Include="MMLErrors.h" />
+    <ClInclude Include="MMLExpressionBuilder.h" />
+    <ClInclude Include="MMLPreprocessor.h" />
+    <ClInclude Include="MMLTokenizer.h" />
+    <ClInclude Include="MMLUtility.h" />
+    <ClInclude Include="mml_types.h" />
+    <ClInclude Include="MusicDocument.h" />
+    <ClInclude Include="ROMEmbedder.h" />
+    <ClInclude Include="spcfile\SPCExporter.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="tester\testers.h" />
+    <ClInclude Include="win32\isdir.h" />
+    <ClInclude Include="win32\pwd.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BinFile.cpp" />
+    <ClCompile Include="CommandOptions.cpp" />
+    <ClCompile Include="Embedder.cpp" />
+    <ClCompile Include="EmbedderConfig.cpp" />
+    <ClCompile Include="FrequencyTable.cpp" />
+    <ClCompile Include="GlobalConfig.cpp" />
+    <ClCompile Include="instrumentset\BRRPacker.cpp" />
+    <ClCompile Include="instrumentset\C700BRR.cpp" />
+    <ClCompile Include="instrumentset\InstrumentSet.cpp" />
+    <ClCompile Include="json\PicoJSONUtils.cpp" />
+    <ClCompile Include="MacroDictionary.cpp" />
+    <ClCompile Include="MMLCommand.cpp" />
+    <ClCompile Include="MMLCompiler.cpp" />
+    <ClCompile Include="MMLErrors.cpp" />
+    <ClCompile Include="MMLExpressionBuilder.cpp" />
+    <ClCompile Include="MMLExpressionFormList.cpp" />
+    <ClCompile Include="MMLNoteCommand.cpp" />
+    <ClCompile Include="MMLPreprocessor.cpp" />
+    <ClCompile Include="MMLTokenizer.cpp" />
+    <ClCompile Include="MMLTokenTypeList.cpp" />
+    <ClCompile Include="MMLUtility.cpp" />
+    <ClCompile Include="MusicDocument.cpp" />
+    <ClCompile Include="qspcc.cpp" />
+    <ClCompile Include="ROMEmbedder.cpp" />
+    <ClCompile Include="spcfile\SPCExporter.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="tester\testers.cpp" />
+    <ClCompile Include="win32\isdir.cpp" />
+    <ClCompile Include="win32\pwd.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="qspcc-resources.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
