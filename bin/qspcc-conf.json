@@ -1,0 +1,8 @@
+{
+	"driver-config": "../n-driver/n-inc.inc",
+	"driver-image": "../n-driver/spcd2n.bin",
+	"rom-image": "../player/QPlay2.smc",
+	"rom-map": "../player/QPlay2.cfg",
+	"max-tracks": 4,
+	"qload-blob-kb": 16
+}
