@@ -72,7 +72,7 @@ dw 0x0400,0x0400,0x0400,0x0400 //  F4 F5 F6 F7|
 
 origin MusicHeaderOrigin
 HeaderNumTracks:
-db 0x03
+db 0x06
 
 HeaderSEEnabled:
 db 0x01
@@ -88,9 +88,7 @@ dw 0x0000
 
 // シーケンスデータ
 origin MusicSeqOrigin
-insert "assets/test-seq.bin"
-insert "assets/test-seq-t2.bin"
-insert "assets/test-seq-t3.bin"
+include "assets/sample-seq.inc"
 insert "assets/test-seq-se.bin"
 
 // シーケンスディレクトリ
@@ -98,20 +96,12 @@ insert "assets/test-seq-se.bin"
 origin SeqDirOrigin
 // BGM各トラックのオフセット
 SeqDirTable:
-db 0x00,0x00 // T0
-db 0xD0,0x00 // T1
-db 0x60,0x01 // T2
-db 0x00,0x00 // T3
-
-db 0x00,0x00 // T4
-db 0x00,0x00 // T5
-db 0x00,0x00 // T6
-db 0x00,0x00 // T7
+include "assets/sample-offsets.inc"
 
 // SEのオフセット
 SeqDirSEPart:
-db 0xB0,0x01 // S0
-db 0xFF,0xFF // S1
+db 0x88,0x02 // S0
+db 0xFF,0xFF // S1(terminate)
 
 // 音色(BRR番号+ADSR)
 // SRCN, ADSR(1), ADSR(2), 00h

@@ -1,0 +1,2 @@
+#!/usr/bin/sh
+split -d -b 32768 spcd2n.bin split_drv_

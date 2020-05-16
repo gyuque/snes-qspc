@@ -376,11 +376,13 @@ SndDrv2HiImageBase:
 
 .segment "SDRVROM5": far
 SndDrv3LoImageBase:
-	.incbin "assets/demo-lo.bin"
+;	.incbin "assets/demo-lo.bin"
+	.incbin "../n-driver/split_drv_00" ;TEST
 
 .segment "SDRVROM6": far
 SndDrv3HiImageBase:
-	.incbin "assets/demo-hi.bin"
+;	.incbin "assets/demo-hi.bin"
+	.incbin "../n-driver/split_drv_01" ;TEST
 
 ; - - - -
 .segment "SDRVROM7": far
