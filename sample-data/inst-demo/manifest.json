@@ -1,0 +1,9 @@
+{
+	"base-frequency": 500,
+	"origin-octave": 0,
+
+	"0": {
+		"brr": "00-musicbox.brr",
+		"adsr": [15, 7, 4, 16]
+		}
+}

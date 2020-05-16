@@ -1,0 +1,125 @@
+#using "inst-demo"
+#title "qSPC Demo"
+#artist "Ninomiya Yuji"
+#coding "Ninomiya Yuji"
+#game "Nekotako"
+
+t85
+
+$i_musicbox=@0v12;
+
+
+
+/* Ch.0 */
+
+o3 l32 q16
+
+
+
+>
+/$i_musicbox @p5a4<d4
+>g2a2
+b2a4f+4
+e2a4<d4
+d4.>e2<d8
+>g4.g2g4
+<e4>e2e8
+g+4.e4.b4
+<c+4>b8a8
+;
+
+
+
+/* Ch.1 */
+
+o4 l32 q16
+
+
+
+>>
+/$i_musicbox @p6r8b4<e8
+r8d4.r8e4.
+<e8>f+4f+4>b4<f+4
+>b4<a4>b4<a4.
+>f+4.a4f+4
+<d4r8a8d4r8
+>a2<e4f+4
+rd4&d16.e4>a4a4
+r4.
+;
+
+
+
+/* Ch.2 */
+
+o3 l32 q16
+
+
+
+/$i_musicbox @p7a4<d4
+>e4g4rg8..r8f+4
+a4r8a4d4
+g4r8e8r4.e4
+>a4<e4<d8>e4
+a4g4.a4d4
+r8a4r8a4e8
+rf+8..f+4d4e4
+re4...
+;
+
+
+
+/* Ch.3 */
+
+o3 l32 q16
+
+
+
+/$i_musicbox @p9r8b4r16.a4..
+r8rb8.a8r16a8.
+<e8>b4r8b8b8a8
+r4f+4r8a4<a2&a8
+>a4g4
+rb4...rb8..g4
+b2r2
+r8
+g+4r4.g+4
+r16a8.b4
+;
+
+
+
+/* Ch.4 */
+
+o3 l32 q16
+
+
+
+/$i_musicbox @p10r2b4.<d8r16>b8.<d4
+r4d8r4.d4
+r>b4...r4<d4
+rd4...r8>f+4a8
+r<d4...d8.r16d4
+r16c+4..e4f+4
+r16>b4r16<d4d4>d8
+r8<c+4>a8<
+;
+
+
+
+/* Ch.5 */
+
+o4 l32 q16
+
+
+
+/$i_musicbox @p11r4.e8
+re4&e16.d8e4d4
+rf+4&f+16.d8d8r4f+8
+f+2e8e8a8r8.
+e4&e16f+4.d4
+r16a4..g4r8e8
+re4&e16.>e8r8<a4e8
+e4d8r4f+4e4
+a4a8
+;
